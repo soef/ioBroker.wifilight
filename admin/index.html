@@ -1,0 +1,172 @@
+<html>
+
+
+<link rel="stylesheet" type="text/css" href="../../lib/css/themes/jquery-ui/redmond/jquery-ui.min.css"/>
+<link rel="stylesheet" type="text/css" href="../../lib/css/jqGrid/ui.jqgrid-4.5.4.css"/>
+<script type="text/javascript" src="../../lib/js/jquery-1.11.1.min.js"></script>
+<script type="text/javascript" src="../../socket.io/socket.io.js"></script>
+<script type="text/javascript" src="../../lib/js/jquery-ui-1.10.3.full.min.js"></script>
+<script type="text/javascript" src="../../lib/js/jqGrid/jquery.jqGrid-4.5.4.min.js"></script>
+<script type="text/javascript" src="../../lib/js/jqGrid/grid.locale-all.js"></script>
+
+<link rel="stylesheet" type="text/css" href="../../css/adapter.css"/>
+<script type="text/javascript" src="../../js/translate.js"></script>
+<script type="text/javascript" src="../../js/adapter-settings.js"></script>
+
+
+<!-- you have to define 2 functions in the global scope: -->
+<script type="text/javascript">
+
+    // Dictionary (systemDictionary is global variable from adapter-settings.js)
+    systemDictionary = {
+        "WiFi Light": {
+            "de": "WiFi Light Einstellungen",
+            "ru": "Пример"
+        },
+        "Settings": {
+            "de": "Einstellungen",
+            "ru": "Settings"
+        },
+        "on save adapter restarts with new config immediately": {
+            "de": "Beim Speichern der Einstellungen wird der Adapter automatisch neu gestartet.",
+            "ru": "Сразу после сохранения настроек драйвер перезапуститься с новыми значениями"
+        },
+        "devices": {
+            "de": "Geräte-liste",
+            "en": "Dives list"
+        },
+        "AddDevice": {
+            "de": "Zum Hinzufügen +-Button betätigen",
+            "en": "Add #-Button to add device"
+        },
+        "name": {
+            "de": "Bezeichnung",
+            "en": "Name"
+        },
+        "ip": {
+            "de": "IP",
+            "en": "IP"
+        },
+        "type": {
+            "de": "Typ",
+            "en": "Type"
+        },
+        "port": {
+            "de": "Port",
+            "en": "Port"
+        },
+        "pollIntervall": {
+            "de": "Pollintervall",
+            "en": "Poll Intervall"
+        }
+    };
+
+
+    var devices = [];
+
+    // the function loadSettings has to exist ...
+    function load(settings, onChange) {
+        if (!settings) return;
+        changed = true;
+
+        for (var key in settings) {
+            // example: select elements with id=key and class=value and insert value
+            if ($('#' + key + '.value').attr('type') == 'checkbox') {
+                $('#' + key + '.value').prop('checked', settings[key]).change(function() {
+                    if ($('#auth').prop('checked')) {
+                        $('#secure').prop('checked', true);
+                    }
+                    onChange();
+                    showHideSettings();
+                });
+            } else {
+                $('#' + key + '.value').val(settings[key]).change(function() {
+                    onChange();
+                }).keyup(function() {
+                    onChange();
+                });
+            }
+        }
+        // Set default language
+        if (!settings.language) {
+            settings.language = systemLang || 'en';
+            $('#language').val(settings.language).trigger('change');
+        }
+
+        devices = settings.devices || [ {name: '', ip: "", type: "", port: ""}];
+        editTable({
+            tabId: 'devices',
+            cols:   [{name: 'name', width: '70'}, {name: 'ip', width: 70}, {name: 'type', width: 40}, {name: 'port',   width: '40'}, {name: 'pollIntervall', with: '15'}],
+            values: devices,
+            top:    400,
+            title:  'Devices'
+        });
+        changed = true;
+        onChange(false);
+    }
+
+    // ... and the function save has to exist.
+    // you have to make sure the callback is called with the settings object as first param!
+    function save(callback) {
+        // example: select elements with class=value and build settings object
+        var obj = {};
+        changed = true;
+        $('.value').each(function () {
+            var $this = $(this);
+            if ($this.attr('type') == 'checkbox') {
+                obj[$this.attr('id')] = $this.prop('checked');
+            } else {
+                obj[$this.attr('id')] = $this.val();
+            }
+        });
+
+        // Get edited table
+        obj.devices = getTableResult('devices', ['name', 'ip', 'type', 'port', 'pollIntervall']);
+        changed = true;
+        callback(obj);
+    }
+
+
+
+</script>
+
+
+<style>
+    h1 {
+        font-size: 11px;
+        color: #505050;
+        font-weight: bold;
+        width: 100%;
+        padding-left:6px;
+        padding-right: 5px;
+        padding-top: 5px;
+        padding-bottom: 5px;
+        background-color: #e0e0e0;
+        /*background-image: linear-gradient(to right, #e0e0e0, rgba(224,224,224,0.0));*/
+        /*background-image: linear-gradient(to right, #e0e0e0, #e8e8e8 50%, #e0e0e0);*/
+    }
+</style>
+
+
+<div id="adapter-container" style="padding-left: 6px; padding-right: 0px; width: 97%;">
+
+    <table>
+        <td><img src="wifilight.png" height="48" width="48" /></td>
+        <td style="padding-top: 20px;padding-left: 10px"><h3 class="translate">WiFi Light adapter settings</h3></td>
+    </table>
+
+    <h1 class="translate">Interval</h1>
+
+    <table>
+        <!--<tr><td class="translate">COM Port Name</td><td><input class="value" id="devices[0].comPort" type="input" size="15" /></td></tr>-->
+        <tr><td class="translate">COM Port Name</td><td><input class="value" id="comPort" type="input" size="15" /></td></tr>
+    </table>
+    <div style="padding: 10px"></div>
+
+    <h1 class="translate">AddDevice</h1>
+
+    <table id="devices"></table><div id="pager-devices"></div>
+</div>
+
+
+</html>

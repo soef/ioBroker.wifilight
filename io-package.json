@@ -1,0 +1,29 @@
+{
+  "common": {
+    "name": "wifilight",
+    "version": "0.0.3",
+    "title": "WiFi Light",
+    "desc": {
+      "en": "WiFi Light Devices",
+      "de": "WiFi Light Devices",
+      "ru": "WiFi Light Devices"
+    },
+    "platform": "Javascript/Node.js",
+    "mode": "daemon",
+    "icon": "wifilight.png",
+    "extIcon": "https://raw.githubusercontent.com/soef/iobroker.wifilight/master/admin/wifilight.png",
+    "readme": "https://github.com/soef/iobroker.wifilight/blob/master/README.md",
+    "loglevel": "info",
+    "type": "hardware"
+  },
+  "native": {
+    "ip": "",
+    "port": 5577,
+    "polling": true,
+    "intervall": 60
+  },
+  "instanceObjects": [
+  ],
+  "objects": [
+  ]
+}

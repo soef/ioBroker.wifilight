@@ -1,0 +1,35 @@
+{
+  "name": "iobroker.wifilight",
+  "version": "0.0.3",
+  "description": "WiFi Light Adapter",
+  "author": {
+    "name": "soef",
+    "email": "soef@gmx.net"
+  },
+  "contributors": [
+    {
+      "name": "soef",
+      "email": "soef@gmx.net"
+    }
+  ],
+  "homepage": "https://github.com/soef/iobroker.wifilight",
+  "license": "MIT",
+  "keywords": [
+    "ioBroker",
+    "wifilight",
+    "lw12",
+    "ld382"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/soef/iobroker.wifilight"
+  },
+  "dependencies": {
+  },
+  "devDependencies": {},
+  "bugs": {
+    "url": "https://github.com/soef/iobroker.wifilight/issues"
+  },
+  "readmeFilename": "README.md",
+  "main": "wifilight.js"
+}
