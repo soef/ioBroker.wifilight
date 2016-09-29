@@ -659,6 +659,7 @@ function normalizeConfigDevice(dev) {
 
 function main() {
 
+    if (!adpter.config.devices) return;
     for (var i=0; i<adapter.config.devices.length; i++) {
         normalizeConfigDevice(adapter.config.devices[i]);
 

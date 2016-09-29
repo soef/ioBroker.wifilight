@@ -1,7 +1,7 @@
 {
   "common": {
     "name": "wifilight",
-    "version": "0.0.6",
+    "version": "0.0.7",
     "title": "WiFi Light",
     "desc": {
       "en": "WiFi Light Devices",
@@ -15,13 +15,11 @@
     "readme": "https://github.com/soef/iobroker.wifilight/blob/master/README.md",
     "loglevel": "info",
     "type": "hardware",
-    "messagebox": true
+    "messagebox": true,
+    "enabled": true
   },
   "native": {
-    "ip": "",
-    "port": 5577,
-    "polling": true,
-    "intervall": 60
+    "devices": []
   },
   "instanceObjects": [
   ],
