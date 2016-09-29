@@ -40,7 +40,7 @@ var adapter = utils.adapter({
         }
     },
     ready: function () {
-        //adapter.log.debug = console.log;
+        adapter.log.debug = console.log;
         devices.init(adapter, function(err) {
             main();
         });
@@ -51,6 +51,7 @@ var adapter = utils.adapter({
 
 var cmds = require(__dirname + '/devices');
 
+
 var usedStateNames = {
     online:      { n: 'reachable', val: 0,     common: { write: false, min: false, max: true }},
     status:      { n: 'on',        val: false, common: { min: false, max: true }},
@@ -59,7 +60,9 @@ var usedStateNames = {
     red:         { n: 'r',         val: 0,     common: { min: 0, max: 255 }},
     green:       { n: 'g',         val: 0,     common: { min: 0, max: 255 }},
     blue:        { n: 'b',         val: 0,     common: { min: 0, max: 255 }},
-    progNo:      { n: 'progNo',    val: 38,    common: { min: 35, max: 56, desc: '36..56' }},
+    white:       { n: 'w',         val: 0,     common: { min: 0, max: 255 }},
+    //progNo:      { n: 'progNo',    val: 38,    common: { min: 35, max: 56, desc: '36..56', states: {"0": "DRY", "1": "RAIN" } }, native: { VALUE_LIST: [ "DRY","RAIN" ] }},
+    progNo:      { n: 'progNo',    val: 38,    common: { min: 35, max: 56, desc: '37..56, 97=none' }},
     progOn:      { n: 'progOn',    val: false, common: { min: false, max: true }},
     speed:       { n: 'speed',     val: 10,    common: { min: 0, max: 255 }},
     refresh:     { n: 'refresh',   val: false, common: { min: false, max: true, desc: 'read states from device' }},
@@ -95,19 +98,21 @@ function stateChange(id, state) {
         case 'r':
         case 'g':
         case 'b':
+        case 'w':
         case 'sat':
             if (typeof state.val == 'string' && state.val[0] == '#') {
                 var co = {
                     r: parseInt(state.val.substr(1, 2), 16),
                     g: parseInt(state.val.substr(3, 2), 16),
-                    b: parseInt(state.val.substr(5, 2), 16)
+                    b: parseInt(state.val.substr(5, 2), 16),
+                    w: state.val.length > 7 ? parseInt(state.val.substr(7, 2), 16) : undefined
                 };
                 device.color(channel, co);
                 break;
             }
             var colors = device.getRGBStates(channel);
             colors[stateName] = state.val >> 0;
-            device.color(channel, colors.r, colors.g, colors.b, colors.sat);
+            device.color(channel, colors);
             break;
         case usedStateNames.brightness.n:
             device.brightness(channel, state.val >> 0, transitionTime);
@@ -115,12 +120,10 @@ function stateChange(id, state) {
         case usedStateNames.temperature.n:
             device.temperature(channel, state.val >> 0, transitionTime);
             break;
-        //case 'spped':
         case usedStateNames.speed.n:
             var progNo = device.get(channel, usedStateNames.progNo.n).val;
             device.add(channel, device.cmds.progNo, progNo, state.val);
             break;
-        case 'progno':
         case usedStateNames.progNo.n:
             if (typeof state.val == 'string') {
                 var ar = state.val.split(' ');
@@ -135,12 +138,18 @@ function stateChange(id, state) {
             device.add(channel, device.cmds.progNo, state.val >> 0, speed);
             break;
         case usedStateNames.progOn.n:
-        case 'progno':
             device.add(channel, state.val ? device.cmds.progOn : device.cmds.progOff);
             break;
         case usedStateNames.command.n:
-            var v = state.val.replace(/^on$|red|green|blue|transition|bri|off/g, function(match) { return { on:'on:1', red:'r', green:'g', blue:'b', transition:'x', bri:'l', off:'on:0'}[match] });
-            v = v.replace(/\s|\"|;$|,$/g, '').replace(/=/g, ':').replace(/;/g, ',').replace(/true/g, 1).replace(/(r|g|b|x|l|sat|on|ct)/g, '"$1"').replace(/^\{?(.*?)\}?$/, '{$1}');
+            //var v = state.val.replace(/^on$|red|green|blue|transition|bri|off/g, function(match) { return { on:'on:1', red:'r', green:'g', blue:'b', transition:'x', bri:'l', off:'on:0'}[match] });
+            //v = v.replace(/\s|\"|;$|,$/g, '').replace(/=/g, ':').replace(/;/g, ',').replace(/true/g, 1).replace(/(r|g|b|x|l|sat|on|ct)/g, '"$1"').replace(/^\{?(.*?)\}?$/, '{$1}');
+
+            //var v = state.val.replace(/^on$|red|green|blue|transition|bri|off/g, function(match) { return { on:'on:1', red:'r', green:'g', blue:'b', white: 'w', transition:'x', bri:'l', off:'on:0'}[match] });
+            //v = v.replace(/\s|\"|;$|,$/g, '').replace(/=/g, ':').replace(/;/g, ',').replace(/true/g, 1).replace(/(r|g|b|w|x|l|sat|on|ct)/g, '"$1"').replace(/^\{?(.*?)\}?$/, '{$1}');
+
+            var v = state.val.replace(/^on$|red|green|blue|transition|bri|off/g, function(match) { return { of:'off:1', on:'on:1', red:'r', green:'g', blue:'b', white: 'w', transition:'x', bri:'l', off:'on:0'}[match] });
+            v = v.replace(/\s|\"|;$|,$/g, '').replace(/=/g, ':').replace(/;/g, ',').replace(/true/g, 1).replace(/(r|g|b|w|x|l|sat|of|on|ct)/g, '"$1"').replace(/^\{?(.*?)\}?$/, '{$1}');
+
             try {
                 var colors = JSON.parse(v);
             } catch (e) {
@@ -153,12 +162,15 @@ function stateChange(id, state) {
             if (o.x !== undefined) {
                 transitionTime = o.x >> 0;
             }
+            if(o.of !== undefined) {
+                device.color(channel, {r:0, g:0, b:0, w: o.w != undefined ? 0 : undefined});
+            }
             if (o['on'] !== undefined) {
                 device.on_off(channel, o.on >> 0 ? true : false);
             }
-            if (colors.r!==undefined || colors.g!==undefined || colors.b!==undefined || colors.sat!==undefined) {
-                if (transitionTime) device.fade(channel, o.r, o.g, o.b, transitionTime );
-                else device.color(channel, o.r, o.g, o.b);
+            //if (colors.r!==undefined || colors.g!==undefined || colors.b!==undefined || colors.sat!==undefined) {
+            if (colors.r!==undefined || colors.g!==undefined || colors.b!==undefined || colors.w!==undefined || colors.sat!==undefined) {
+                device.fade(channel, o, transitionTime);
             }
             if (o['ct'] !== undefined) {
                 device.temperature(channel, o.ct >> 0, transitionTime);
@@ -177,45 +189,55 @@ function stateChange(id, state) {
 function wifiLight(config, cb) {
     this.USE_SOCKET_ONCE = false; //true;
     this.config = config;
-    this._updateTimer = null;
-    //this.id = normalizedName(config.ip);
-    this.dev = new devices.CDevice(config.ip, '');
-    this.setOnline(false);
-    this.locked = 0;
-    this.queue = [];
-    this.dataBuffer = new Uint8Array(200);
-    this.dataBuffer.pos = 0;
-    this.states = { red: this.get('r'), green: this.get('g'), blue: this.get('b') };
 
     this.cmds = cmds[config.type];
     if (!this.cmds) {
         adapter.log.error('wrong device type. ' + config.type + ' not yet supported!');
+        if (cb) cb(-1);
         return null;
     }
     if(this.cmds.vmax == undefined) this.cmds.vmax = 255;
-    this.start(cb);
+
+    //this._updateTimer = null;
+    this.createDevice(function(err) {
+        this.setOnline(false);
+        this.locked = 0;
+        this.queue = [];
+        this.dataBuffer = new Uint8Array(200);
+        this.dataBuffer.pos = 0;
+        this.states = { red: this.get('r'), green: this.get('g'), blue: this.get('b') };
+        this.start(cb);
+    }.bind(this));
     return this;
 }
 
+wifiLight.prototype.createDevice = function (cb) {
+    this.dev = new devices.CDevice(0, '');
+    this.dev.setDevice(this.config.ip, {common: {name: this.config.name, role: 'device'}, native: { type: this.config.type, intervall: this.config.pollIntervall } });
+    for (var j in usedStateNames) {
+        if (j == 'white' && this.cmds.rgbw == undefined) continue;
+        var st = Object.assign({}, usedStateNames[j]);
+        if (j == 'progNo' && this.cmds.programNames) st.common.states = this.cmds.programNames;
+        this.dev.createNew(st.n, st);
+    }
+    devices.update(cb);
+};
 
 wifiLight.prototype.start = function (cb) {
-    var self = this;
-
     if (this.USE_SOCKET_ONCE) {
-        wifi[this.dev.getFullId()] = self;
-        cb();
+        wifi[this.dev.getFullId()] = this;
+        cb(0);
         return;
     }
 
+    var self = this;
+    self.destroyClient();
     self.client = new net.Socket();
+    self.client.setKeepAlive(true,0);
+    self.client.setNoDelay(true);
     self.client.setTimeout(5000, function () {
-        adapter.log.debug('self.client.setTimeout for ' + self.config.ip);
+        //adapter.log.debug('self.client.setTimeout for ' + self.config.ip);
     });
-    if (self._updateTimer) {
-        clearTimeout(self._updateTimer);
-        self._updateTimer = null;
-    }
-
     self.client.on('data', function(data) {
         self.onData(data);
     });
@@ -223,18 +245,12 @@ wifiLight.prototype.start = function (cb) {
         self.setOnline(false);
         adapter.log.debug('onClose (' + self.config.ip + ')');
     });
-    self.client.on('drain', function() {
-        console.log("on drain!");
-    });
     self.client.on('error', function(error) {
-        adapter.log.debug('onError (' + self.config.ip + ') - ' + ((new Date().getTime() - self.ts) / 1000) + ' sec: ' + JSON.stringify(error));
+        adapter.log.debug('onError (' + self.config.ip + '): ' + JSON.stringify(error));
         switch (error.errno) { //error.code
             case 'ECONNRESET':
-                self.client.destroy();
-                setTimeout(self.start.bind(self), 5000);
-                break;
             case 'ETIMEDOUT':
-                self.client.destroy();
+                self.destroyClient();
                 setTimeout(self.start.bind(self), 5000);
                 break;
         }
@@ -248,100 +264,21 @@ wifiLight.prototype.start = function (cb) {
     self.client.connect(self.config.port, self.config.ip, function() {
         wifi[self.dev.getFullId()] = self;
         self.setOnline(true);
-        self.updateTimer();
+        self.runUpdateTimer();
         if (cb) cb();
     });
 };
 
-
-//wifiLight.prototype.start = function () {
-//    var self = this;
-//    return new Promise(function(resolve, reject) {
-//
-//        wifi[self.id] = self;
-//        resolve();
-//        return;
-//
-//        self.ts = new Date().getTime();
-//        self.client = new net.Socket();
-//        self.client.setTimeout(5000, function () {
-//             adapter.log.debug('self.client.setTimeout for ' + self.config.ip);
-//        });
-//        if (self._updateTimer) {
-//            clearTimeout(self._updateTimer);
-//            self._updateTimer = null;
-//        }
-//
-//        self.client.on('data', function(data) {
-//            self.onData(data);
-//        });
-//
-//        self.client.on('close', function(error) {
-//            self.setOnline(false);
-//            adapter.log.debug('onClose (' + self.config.ip + ')');
-//        });
-//
-//        self.client.on('drain', function() {
-//            console.log("on drain!");
-//        });
-//
-//
-//        self.client.on('error', function(error) {
-//            adapter.log.debug('onError (' + self.config.ip + ') - ' + ((new Date().getTime() - self.ts) / 1000) + ' sec: ' + JSON.stringify(error));
-//            switch (error.errno) { //error.code
-//                case 'ECONNRESET':
-//                    self.client.destroy();
-//                    setTimeout(self.start.bind(self), 5000);
-//                    break;
-//                case 'ETIMEDOUT':
-//                    self.client.destroy();
-//                    setTimeout(self.start.bind(self), 5000);
-//                    break;
-//            }
-//            self.setOnline(false);
-//        });
-//
-//        self.client.on('connect', function(error) {
-//            adapter.log.debug(self.config.ip + ' connected');
-//            self.setOnline(true);
-//        });
-//
-//
-//        self.client.connect(self.config.port, self.config.ip, function() {
-//            wifi[self.id] = self;
-//            self.setOnline(true);
-//            self.updateTimer();
-//            resolve();
-//        });
-//    });
-//};
-
-//wifiLight.prototype._write = function(data, cb) {
-//
-//    var self = this;
-//    if (this.client) {
-//        this.client.write(data, cb);
-//        return;
-//    }
-//    this.client = new net.Socket();
-//    this.client.setTimeout(5000, function () {
-//        adapter.log.debug('self.client.setTimeout for ' + this.config.ip);
-//    }.bind(this));
-//
-//    this.client.on('data', function(data) {
-//        this.onData(data);
-//        this.client.end();
-//        this.client = null;
-//    }.bind(this));
-//    this.client.on('error', function(error) {
-//        this.client.destroy();
-//        this.client = null;
-//    }.bind(this));
-//
-//    this.client.connect(this.config.port, this.config.ip, function() {
-//        this.client.write(data, cb);
-//    }.bind(this));
-//};
+wifiLight.prototype.destroyClient = function () {
+    if (this.updateTimer) {
+        clearTimeout(this.updateTimer);
+        this.updateTimer = null;
+    }
+    if (this.client) {
+        this.client.destroy();
+        this.client = null;
+    }
+};
 
 wifiLight.prototype._write = function(data, cb) {
 
@@ -352,7 +289,7 @@ wifiLight.prototype._write = function(data, cb) {
     }
     this.client = new net.Socket();
     this.client.setTimeout(5000, function () {
-        adapter.log.debug('self.client.setTimeout for ' + self.config.ip);
+        //adapter.log.debug('self.client.setTimeout for ' + self.config.ip);
     });
 
     this.client.on('data', function(data) {
@@ -361,8 +298,9 @@ wifiLight.prototype._write = function(data, cb) {
         self.client = null;
     });
     this.client.on('error', function(error) {
-        self.client.destroy();
-        self.client = null;
+        self.destroyClient();
+        //self.client.destroy();
+        //self.client = null;
     });
 
     this.client.connect(this.config.port, this.config.ip, function() {
@@ -388,10 +326,10 @@ wifiLight.prototype.close = function() {
     }
 };
 
-wifiLight.prototype.updateTimer = function () {
+wifiLight.prototype.runUpdateTimer = function () {
     this.refresh();
     if (this.config.pollIntervall > 0) {
-        this._updateTimer = setTimeout(this.updateTimer.bind(this), this.config.pollIntervall * 1000);
+        this.updateTimer = setTimeout(this.runUpdateTimer.bind(this), this.config.pollIntervall * 1000);
     }
 };
 
@@ -407,7 +345,6 @@ wifiLight.prototype.doRrefresh = function(channel) {
 };
 
 wifiLight.prototype.refresh = function(channel, ctrl) {
-    //this.write(channel, this.cmds.statusRequest);
     this.add(channel, this.cmds.statusRequest, { ctrl: ctrl|true });
 };
 
@@ -426,7 +363,6 @@ wifiLight.prototype.write = function(channel, cmd, cb) {
     }
     adapter.log.debug(buf);
     this.USE_SOCKET_ONCE ? this._write(buf, cb) : this.client.write(buf, cb);
-    //this.client.write(buf, cb);
 };
 
 wifiLight.prototype.clearQueue = function() {
@@ -537,21 +473,24 @@ wifiLight.prototype.on_off = function (channel, state) {
 //    //this.send(channel, state ? this.cmds.on : this.cmds.off);
 //};
 
-wifiLight.prototype.fade = function (channel, r,g,b, transitionTime) {
-    if (typeof r == 'object') {
-        transitionTime = g; g = r.g; b = r.b; r = r.r;
+wifiLight.prototype.fade = function (channel, rgbw,g,b, transitionTime) {
+    if (typeof rgbw != 'object') {
+        rgbw = { g: g, b: b, r: rgbw };
+    } else {
+        transitionTime = g;
     }
     if (transitionTime === 0) {
-        this.color(channel, r, g, b);
+        this.color(channel, rgbw);
         return;
     }
-    var co = { r: this.states.red, g: this.states.green, b: this.states.blue};
-    var dif= { r: r - co.r, g: g - co.g, b: b - co.b };
-    var maxSteps = Math.max(Math.abs(dif.r), Math.abs(dif.g), Math.abs(dif.b), 1);
-    //maxSteps = parseInt(maxSteps * 54 / 100);
+    var co = { r: this.states.red, g: this.states.green, b: this.states.blue, w: this.states.white};
+    var dif= { r: rgbw.r - co.r, g: rgbw.g - co.g, b: rgbw.b - co.b};
+    dif.w = (rgbw.w != undefined && co.w != undefined) ? rgbw.w - co.w : 0;
+    var maxSteps = Math.max(Math.abs(dif.r), Math.abs(dif.g), Math.abs(dif.b), Math.abs(dif.w), 1);
     dif.r /= maxSteps;
     dif.g /= maxSteps;
     dif.b /= maxSteps;
+    dif.w /= maxSteps;
 
     var steps = maxSteps;
     var delay = parseInt(transitionTime*100 / maxSteps);
@@ -561,24 +500,28 @@ wifiLight.prototype.fade = function (channel, r,g,b, transitionTime) {
         co.r += dif.r;
         co.g += dif.g;
         co.b += dif.b;
+        if (co.w != undefined) co.w += dif.w;
         this.color(channel, roundRGB(co, true), { delay:delay });
     }
 };
 
-wifiLight.prototype.color = function (channel, r, g, b, opt) {
-    if (typeof r == 'object') {
-        opt = g; g = r.g; b = r.b; r = r.r;
+wifiLight.prototype.color = function (channel, rgbw, g, b, opt) {
+    if (typeof rgbw != 'object') {
+        rgbw = { g: g, b: b, r: rgbw };
+    } else {
+        opt = g;
     }
-    if (r > this.cmds.vmax) r = this.cmds.vmax;
-    if (g > this.cmds.vmax) g = this.cmds.vmax;
-    if (b > this.cmds.vmax) b = this.cmds.vmax;
-    this.send(channel, this.cmds.rgb, r, g, b, opt);
+    rgbw.w == undefined ?
+        this.send(channel, this.cmds.rgb, rgbw.r, rgbw.g, rgbw.b, opt) :
+        this.send(channel, this.cmds.rgbw, rgbw.r, rgbw.g, rgbw.b, rgbw.w, opt);
 };
 
 wifiLight.prototype.temperature = function (channel, temp, transitionTime) {
     var co = ct2rgb(temp);
     var hsv = rgb2hsv(co);
-    hsv.v = this.get(channel, 'bri').val;
+    //hsv.v = this.get(channel, 'bri').val;
+    var v = this.get(channel, 'bri').val;
+    if (v) hsv.v = v;
     co = hsv2rgb(hsv);
     this.fade(channel, co, transitionTime);
 };
@@ -587,7 +530,8 @@ wifiLight.prototype.getRGBStates = function (channel) {
     return {
         r: this.states.red,
         g: this.states.green,
-        b: this.states.blue
+        b: this.states.blue,
+        w: this.states.white
     };
 };
 
@@ -624,10 +568,6 @@ wifiLight.prototype.onData = function (data) {
     this.dataBuffer.set(data, this.dataBuffer.pos);
     this.dataBuffer.pos += data.length;
 
-    //if (this.dataBuffer.pos < this.cmds.responsLen) {
-    //    return null;
-    //}
-
     while (this.dataBuffer.pos >= this.cmds.responseLen)
     {
         var buf = this.dataBuffer.subarray(0, this.cmds.responseLen);
@@ -646,6 +586,7 @@ wifiLight.prototype.onData = function (data) {
             set(usedStateNames.progNo.n, this.states.progNo);
             set(usedStateNames.progOn.n, this.states.progOn);
             set(usedStateNames.speed.n, this.states.speed);
+            set(usedStateNames.white.n, this.states.white);
             devices.update();
         }
     }
@@ -700,23 +641,6 @@ wifiLight.prototype.onData = function (data) {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-
-function createAll (callback) {
-    var dev = new devices.CDevice(0, '');
-
-    for (var i=0; i<adapter.config.devices.length; i++) {
-        var device = adapter.config.devices[i];
-        dev.setDevice(device.ip, {common: {name: device.name, role: 'device'}, native: { type: device.type, intervall: device.pollIntervall } });
-        for (var j in usedStateNames) {
-            var st = Object.assign({}, usedStateNames[j]);
-            dev.createNew(st.n, st);
-        }
-    }
-    devices.update(callback);
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 function normalizeConfigDevice(dev) {
     dev.pollIntervall = parseInt(dev.pollIntervall) | 0;
     dev.port = parseInt(dev.port) || 5577;
@@ -724,14 +648,13 @@ function normalizeConfigDevice(dev) {
 
 function main() {
 
-    createAll();
-
     for (var i=0; i<adapter.config.devices.length; i++) {
         normalizeConfigDevice(adapter.config.devices[i]);
 
         new wifiLight(adapter.config.devices[i], function() {
         });
     }
+    devices.update();
     adapter.subscribeStates('*');
 }
 
