@@ -4,6 +4,7 @@ var utils = require(__dirname + '/lib/utils'),
     soef = require(__dirname + '/lib/soef'),
     devices = new soef.Devices(),
     net = require('net'),
+    discovery = require(__dirname + '/lib/discovery'),
     colors = require(__dirname + '/lib/colors');
 
 //"colorsys": "^1.0.9",
@@ -39,13 +40,41 @@ var adapter = utils.adapter({
             stateChange(id, state);
         }
     },
+    message: onMessage,
     ready: function () {
-        adapter.log.debug = console.log;
+        //adapter.log.debug = console.log;
         devices.init(adapter, function(err) {
             main();
         });
     }
 });
+
+
+function onMessage (obj) {
+    if (!obj) return;
+    switch (obj.command) {
+        case 'discovery':
+            discovery.scanForDevices(
+                function(entry) {
+                    return !adapter.config.devices.some(function(e,i) {
+                        return e.ip == entry.ip;
+                    });
+                },
+                function (result) {
+                    if (obj.callback) {
+                        adapter.sendTo (obj.from, obj.command, JSON.stringify(result), obj.callback);
+                    }
+                }
+            );
+            return true;
+        default:
+            adapter.log.warn("Unknown command: " + obj.command);
+            break;
+    }
+    if (obj.callback) adapter.sendTo (obj.from, obj.command, obj.message, obj.callback);
+    return true;
+};
+
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -61,7 +90,6 @@ var usedStateNames = {
     green:       { n: 'g',         val: 0,     common: { min: 0, max: 255 }},
     blue:        { n: 'b',         val: 0,     common: { min: 0, max: 255 }},
     white:       { n: 'w',         val: 0,     common: { min: 0, max: 255 }},
-    //progNo:      { n: 'progNo',    val: 38,    common: { min: 35, max: 56, desc: '36..56', states: {"0": "DRY", "1": "RAIN" } }, native: { VALUE_LIST: [ "DRY","RAIN" ] }},
     progNo:      { n: 'progNo',    val: 38,    common: { min: 35, max: 56, desc: '37..56, 97=none' }},
     progOn:      { n: 'progOn',    val: false, common: { min: false, max: true }},
     speed:       { n: 'speed',     val: 10,    common: { min: 0, max: 255 }},
@@ -72,14 +100,6 @@ var usedStateNames = {
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-//function getState(id, state) {
-//    //var s = id.replace(/\w+$/, state);
-//    //var s = id.replace(/\w+$/, '');
-//    var o = devices.get(id);
-//    if (o === undefined) return undefined;
-//    return o.val || 0;
-//}
 
 function stateChange(id, state) {
     var ar = id.split('.');
@@ -141,12 +161,6 @@ function stateChange(id, state) {
             device.add(channel, state.val ? device.cmds.progOn : device.cmds.progOff);
             break;
         case usedStateNames.command.n:
-            //var v = state.val.replace(/^on$|red|green|blue|transition|bri|off/g, function(match) { return { on:'on:1', red:'r', green:'g', blue:'b', transition:'x', bri:'l', off:'on:0'}[match] });
-            //v = v.replace(/\s|\"|;$|,$/g, '').replace(/=/g, ':').replace(/;/g, ',').replace(/true/g, 1).replace(/(r|g|b|x|l|sat|on|ct)/g, '"$1"').replace(/^\{?(.*?)\}?$/, '{$1}');
-
-            //var v = state.val.replace(/^on$|red|green|blue|transition|bri|off/g, function(match) { return { on:'on:1', red:'r', green:'g', blue:'b', white: 'w', transition:'x', bri:'l', off:'on:0'}[match] });
-            //v = v.replace(/\s|\"|;$|,$/g, '').replace(/=/g, ':').replace(/;/g, ',').replace(/true/g, 1).replace(/(r|g|b|w|x|l|sat|on|ct)/g, '"$1"').replace(/^\{?(.*?)\}?$/, '{$1}');
-
             var v = state.val.replace(/^on$|red|green|blue|transition|bri|off/g, function(match) { return { of:'off:1', on:'on:1', red:'r', green:'g', blue:'b', white: 'w', transition:'x', bri:'l', off:'on:0'}[match] });
             v = v.replace(/\s|\"|;$|,$/g, '').replace(/=/g, ':').replace(/;/g, ',').replace(/true/g, 1).replace(/(r|g|b|w|x|l|sat|of|on|ct)/g, '"$1"').replace(/^\{?(.*?)\}?$/, '{$1}');
 
@@ -168,7 +182,6 @@ function stateChange(id, state) {
             if (o['on'] !== undefined) {
                 device.on_off(channel, o.on >> 0 ? true : false);
             }
-            //if (colors.r!==undefined || colors.g!==undefined || colors.b!==undefined || colors.sat!==undefined) {
             if (colors.r!==undefined || colors.g!==undefined || colors.b!==undefined || colors.w!==undefined || colors.sat!==undefined) {
                 device.fade(channel, o, transitionTime);
             }
@@ -299,8 +312,6 @@ wifiLight.prototype._write = function(data, cb) {
     });
     this.client.on('error', function(error) {
         self.destroyClient();
-        //self.client.destroy();
-        //self.client = null;
     });
 
     this.client.connect(this.config.port, this.config.ip, function() {

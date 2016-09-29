@@ -1,7 +1,7 @@
 {
   "common": {
     "name": "wifilight",
-    "version": "0.0.5",
+    "version": "0.0.6",
     "title": "WiFi Light",
     "desc": {
       "en": "WiFi Light Devices",
@@ -14,7 +14,8 @@
     "extIcon": "https://raw.githubusercontent.com/soef/iobroker.wifilight/master/admin/wifilight.png",
     "readme": "https://github.com/soef/iobroker.wifilight/blob/master/README.md",
     "loglevel": "info",
-    "type": "hardware"
+    "type": "hardware",
+    "messagebox": true
   },
   "native": {
     "ip": "",
