@@ -7,9 +7,6 @@ var utils = require(__dirname + '/lib/utils'),
     discovery = require(__dirname + '/lib/discovery'),
     colors = require(__dirname + '/lib/colors');
 
-//"colorsys": "^1.0.9",
-//"promise": "^7.1.1"
-
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 var wifi = {};
@@ -56,9 +53,16 @@ function onMessage (obj) {
         case 'discovery':
             discovery.scanForDevices(
                 function(entry) {
-                    return !adapter.config.devices.some(function(e,i) {
+                    var ret = !adapter.config.devices.some(function(e,i) {
                         return e.ip == entry.ip;
                     });
+                    if (ret) {
+                        var dev = cmds.knownDeviceNames[entry.name];
+                        entry.type = dev ? dev.type : '';
+                        entry.port = 5577;
+                        entry.pollIntervall = 30;
+                    }
+                    return ret;
                 },
                 function (result) {
                     if (obj.callback) {
@@ -75,7 +79,6 @@ function onMessage (obj) {
     return true;
 };
 
-
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 var cmds = require(__dirname + '/devices');
@@ -86,13 +89,13 @@ var usedStateNames = {
     status:      { n: 'on',        val: false, common: { min: false, max: true }},
     brightness:  { n: 'bri',       val: 0,     common: { min: 0, max: 100, unit: '%', desc: '0..100%' }},
     temperature: { n: 'ct',        val: 0,     common: { min: 0, max: 5000, unit: '°K', desc: 'in °Kelvin 0..5000' }},
-    red:         { n: 'r',         val: 0,     common: { min: 0, max: 255 }},
-    green:       { n: 'g',         val: 0,     common: { min: 0, max: 255 }},
-    blue:        { n: 'b',         val: 0,     common: { min: 0, max: 255 }},
-    white:       { n: 'w',         val: 0,     common: { min: 0, max: 255 }},
+    red:         { n: 'r',         val: 0,     common: { min: 0, max: 255, desc: '0..255 or #rrggbb[ww] (hex)' }},
+    green:       { n: 'g',         val: 0,     common: { min: 0, max: 255, desc: '0..255 or #rrggbb[ww] (hex)' }},
+    blue:        { n: 'b',         val: 0,     common: { min: 0, max: 255, desc: '0..255 or #rrggbb[ww] (hex)' }},
+    white:       { n: 'w',         val: 0,     common: { min: 0, max: 255, desc: '0..255 or #rrggbb[ww] (hex)' }},
     progNo:      { n: 'progNo',    val: 38,    common: { min: 35, max: 56, desc: '37..56, 97=none' }},
-    progOn:      { n: 'progOn',    val: false, common: { min: false, max: true }},
-    speed:       { n: 'speed',     val: 10,    common: { min: 0, max: 255 }},
+    progOn:      { n: 'progOn',    val: false, common: { min: false, max: true, desc: 'program on/off' }},
+    speed:       { n: 'speed',     val: 10,    common: { min: 0, max: 255 }, desc: 'speed for preogram'},
     refresh:     { n: 'refresh',   val: false, common: { min: false, max: true, desc: 'read states from device' }},
     //alpha:       { n: 'sat',       val: 0, common: { min: 0, max: 255 }},
     transition:  { n: 'trans',     val: 30,    common: { unit: '\u2152 s', desc: 'in 10th seconds'} },
@@ -108,7 +111,6 @@ function stateChange(id, state) {
     var device = wifi[deviceName];
     if (device == undefined) return;
     var channel = "";
-    //var transitionTime = getState(dcs(deviceName, 'tans')) || 3;
     var transitionTime = device.get(channel, usedStateNames.transition.n).val || 3;
     device.clearQueue();
     switch (stateName) {
@@ -408,7 +410,7 @@ wifiLight.prototype.add = function (varArgArray) {
         cmd: cmd,
         ctrl: opt && opt.ctrl ? true : false,
         channel: channel,
-        delay: opt && opt.delay ? opt.delay : 10,
+        delay: opt && opt.delay ? opt.delay : this.cmds.delay != undefined ? this.cmds.delay : 10,
         ts: 0,
         inProcess: 0,
         unlock: 0

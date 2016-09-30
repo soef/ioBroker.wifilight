@@ -34,11 +34,16 @@ const programNames = {
     56: "Seven Colors Jumping Change"
 };
 
+exports.knownDeviceNames = {
+    'HF-LPB100-ZJ200': { type: 'LD382A' /*, port: 5577*/ },
+    'HF-A11-ZJ002':    { type: 'LW12' }
+};
+
 exports.LW12 = {
     useCheckSum: false,
     port: 5577,
-    //vmax: 100,
     vmax: 255,
+    delay: 10,
     responseLen: 11,
     on: [0xCC, 0x23, 0x33],
     off: [0xCC, 0x24, 0x33],
@@ -71,16 +76,16 @@ exports.LD382A = {
     useCheckSum: true,
     port: 5577,
 
+    delay: 10,
     responseLen: 14,
-    on: [0x71, 0x23, 0x0f/*, 0xa3*/],
-    off: [0x71, 0x24, 0x0f/*, 0xa4*/],
+    on: [0x71, 0x23, 0x0f],
+    off: [0x71, 0x24, 0x0f],
     rgb: [0x31, VARS.red, VARS.green, VARS.blue, 0xff /*VARS.white*/, 0x00, 0x0f],
     rgbw: [0x31, VARS.red, VARS.green, VARS.blue, VARS.white, 0x00, 0x0f],
-    //bri: [ 0x31, 0xff, 0xff, 0xff, VARS.bright, 0x00, 0x0f ],
     progOn: [0x71, 0x21, 0x0f],
     progOff: [0x71, 0x20, 0x0f],
     progNo: [97, VARS.prog, VARS.speed, 0x0f],
-    statusRequest: [0x81, 0x8A, 0x8B/*, 0x96*/],
+    statusRequest: [0x81, 0x8A, 0x8B],
     programNames: programNames,
 
     decodeResponse: function(data) {
@@ -101,4 +106,36 @@ exports.LD382A = {
     }
 };
 
+exports.LD382 = { // not tested
+    useCheckSum: true,
+    port: 5577,
+
+    delay: 10,
+    responseLen: 14,
+    on: [0x71, 0x23, 0x0f],
+    off: [0x71, 0x24, 0x0f],
+    rgb: [0x31, VARS.red, VARS.green, VARS.blue, 0xff /*VARS.white*/, 0x00, 0x0f],
+    progOn: [0x71, 0x21, 0x0f],
+    progOff: [0x71, 0x20, 0x0f],
+    progNo: [97, VARS.prog, VARS.speed, 0x0f],
+    statusRequest: [0x81, 0x8A, 0x8B],
+    programNames: programNames,
+
+    decodeResponse: function(data) {
+        if (data.length < 14 || data[0] !== 129) return null;
+        //[129, 4, 35, 97, 33, 9, 11, 22, 33, 255, 3, 0, 0, 119]
+        return {
+            power: ((data[2] === 0x23) ? true : false),
+            //power: ((data[13] & 0x01) ? true : false),
+            //power: ((data[13] & 0x01) ? false : true),
+            progNo: data[3],//mode
+            progOn: data[4] === 33, //modeRun
+            speed: data[5], //modeSpeed
+            red: data[6],
+            green: data[7],
+            blue: data[8],
+            white: data[9]
+        };
+    }
+};
 
