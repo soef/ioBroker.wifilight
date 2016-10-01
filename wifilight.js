@@ -248,7 +248,7 @@ wifiLight.prototype.start = function (cb) {
     var self = this;
     self.destroyClient();
     self.client = new net.Socket();
-    self.client.setKeepAlive(true,0);
+    self.client.setKeepAlive(true,30000);
     self.client.setNoDelay(true);
     self.client.setTimeout(5000, function () {
         //adapter.log.debug('self.client.setTimeout for ' + self.config.ip);
