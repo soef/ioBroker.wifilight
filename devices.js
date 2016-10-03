@@ -55,13 +55,12 @@ exports.LW12 = {
     programNames: programNames,
 
     decodeResponse: function(data) {
-        if (data[0] == 0x66 && data[1] == 0x01) {
-        }
+        if (data[0] != 0x66 || data[1] != 0x01) return null;
         var result = {
             power: ((data[2] === 0x23) ? true : false),
             progNo: data[3],//mode
             progOn: data[4] === 33, //modeRun
-            speed: data[5], //modeSpeed
+            rogSpeed: data[5], //modeSpeed
             red: data[6],
             green: data[7],
             blue: data[8]
@@ -75,6 +74,7 @@ exports.LW12 = {
 exports.LD382A = {
     useCheckSum: true,
     port: 5577,
+    //onlyConnectOnWrite: true,
 
     delay: 10,
     responseLen: 14,
@@ -89,7 +89,7 @@ exports.LD382A = {
     programNames: programNames,
 
     decodeResponse: function(data) {
-        if (data.length < 14 || data[0] !== 129) return null;
+        if (data[0] !== 129) return null;
         //[129, 4, 35, 97, 33, 9, 11, 22, 33, 255, 3, 0, 0, 119]
         return {
             power: ((data[2] === 0x23) ? true : false),
@@ -97,7 +97,7 @@ exports.LD382A = {
             //power: ((data[13] & 0x01) ? false : true),
             progNo: data[3],//mode
             progOn: data[4] === 33, //modeRun
-            speed: data[5], //modeSpeed
+            preogSpeed: data[5], //modeSpeed
             red: data[6],
             green: data[7],
             blue: data[8],
@@ -122,7 +122,7 @@ exports.LD382 = { // not tested
     programNames: programNames,
 
     decodeResponse: function(data) {
-        if (data.length < 14 || data[0] !== 129) return null;
+        if (data[0] !== 129) return null;
         //[129, 4, 35, 97, 33, 9, 11, 22, 33, 255, 3, 0, 0, 119]
         return {
             power: ((data[2] === 0x23) ? true : false),
@@ -130,7 +130,7 @@ exports.LD382 = { // not tested
             //power: ((data[13] & 0x01) ? false : true),
             progNo: data[3],//mode
             progOn: data[4] === 33, //modeRun
-            speed: data[5], //modeSpeed
+            progSpeed: data[5], //modeSpeed
             red: data[6],
             green: data[7],
             blue: data[8],

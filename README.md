@@ -4,7 +4,7 @@
 ioBroker Adapter for WiFi Light
 
 #### Info
-First only LW12 supported
+First only LW12, LD382 and LD382A supported
 
 ###### How to use the command state:
 + Possible identifiers are: ``red, r, green, g, blue, b, bri, sat, transition, on, off``
@@ -26,6 +26,9 @@ on
 To change the color you do not have to use all three vallues.
 For example, ``` red = 0 ```, blue and green will stay unchanged.
 
+###### r, g, b, w States:
++ Values 0..255
++ \#rrggbb[ww]
 
 #### Installation
 Execute the following command in the iobroker root directory (e.g. in /opt/iobroker)

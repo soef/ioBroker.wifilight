@@ -1,13 +1,19 @@
 {
   "common": {
     "name": "wifilight",
-    "version": "0.0.10",
+    "version": "0.0.14",
     "title": "WiFi Light",
     "desc": {
       "en": "WiFi Light Devices",
       "de": "WiFi Light Devices",
       "ru": "WiFi Light Devices"
     },
+    "keywords": [
+      "ioBroker",
+      "wifilight",
+      "lw12",
+      "ld382"
+    ],
     "platform": "Javascript/Node.js",
     "mode": "daemon",
     "icon": "wifilight.png",
