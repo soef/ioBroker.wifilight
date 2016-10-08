@@ -1,8 +1,9 @@
 ﻿"use strict";
 
 var utils = require(__dirname + '/lib/utils'),
-    soef = require(__dirname + '/lib/soef'),
-    devices = new soef.Devices(),
+    //soef = require(__dirname + '/lib/soef'),
+    soef = require('soef'),
+    //devices = new soef.Devices(),
     net = require('net'),
     discovery = require(__dirname + '/lib/discovery'),
     colors = require(__dirname + '/lib/colors');
@@ -46,12 +47,12 @@ var adapter = utils.adapter({
             callback();
         }
     },
-    discover: function (callback) {
-    },
-    install: function (callback) {
-    },
-    uninstall: function (callback) {
-    },
+    //discover: function (callback) {
+    //},
+    //install: function (callback) {
+    //},
+    //uninstall: function (callback) {
+    //},
     objectChange: function (id, obj) {
     },
     stateChange: function (id, state) {
@@ -61,18 +62,19 @@ var adapter = utils.adapter({
     },
     message: onMessage,
     ready: function () {
-        adapter.getForeignObject('system.adapter.' + adapter.namespace, function(err, obj) {
-            if (!err && obj && obj.common && obj.common.enabled === false) {
-                // running in debuger
-                adapter.log.debug = console.log;
-                adapter.log.info = console.log;
-                adapter.log.warn = console.log;
-                debug = true;
-            }
-            devices.init(adapter, function(err) {
-                main();
-            });
-        });
+        soef.main(adapter, main);
+        //adapter.getForeignObject('system.adapter.' + adapter.namespace, function(err, obj) {
+        //    if (!err && obj && obj.common && obj.common.enabled === false) {
+        //        // running in debuger
+        //        adapter.log.debug = console.log;
+        //        adapter.log.info = console.log;
+        //        adapter.log.warn = console.log;
+        //        debug = true;
+        //    }
+        //    devices.init(adapter, function(err) {
+        //        main();
+        //    });
+        //});
         //devices.init(adapter, function(err) {
         //    main();
         //});
@@ -136,6 +138,16 @@ var usedStateNames = {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+function parseHexColor(val) {
+    var co = {
+        r: parseInt(val.substr(1, 2), 16),
+        g: parseInt(val.substr(3, 2), 16) || 0,
+        b: parseInt(val.substr(5, 2), 16) || 0,
+        w: val.length > 7 ? parseInt(val.substr(7, 2), 16) : undefined
+    };
+    return co;
+}
+
 function stateChange(id, state) {
     var ar = id.split('.');
     //var dcs = adapter.idToDCS(id);
@@ -155,12 +167,13 @@ function stateChange(id, state) {
         case 'w':
         case 'sat':
             if (typeof state.val == 'string' && state.val[0] == '#') {
-                var co = {
-                    r: parseInt(state.val.substr(1, 2), 16),
-                    g: parseInt(state.val.substr(3, 2), 16),
-                    b: parseInt(state.val.substr(5, 2), 16),
-                    w: state.val.length > 7 ? parseInt(state.val.substr(7, 2), 16) : undefined
-                };
+                var co = parseHexColors(state.val);
+                //var co = {
+                //    r: parseInt(state.val.substr(1, 2), 16),
+                //    g: parseInt(state.val.substr(3, 2), 16),
+                //    b: parseInt(state.val.substr(5, 2), 16),
+                //    w: state.val.length > 7 ? parseInt(state.val.substr(7, 2), 16) : undefined
+                //};
                 device.color(channel, co);
                 break;
             }
@@ -195,14 +208,18 @@ function stateChange(id, state) {
             device.addToQueue(channel, state.val ? device.cmds.progOn : device.cmds.progOff);
             break;
         case usedStateNames.command.n:
-            var v = state.val.replace(/^on$|red|green|blue|transition|bri|off/g, function(match) { return { of:'off:1', on:'on:1', red:'r', green:'g', blue:'b', white: 'w', transition:'x', bri:'l', off:'on:0'}[match] });
-            v = v.replace(/\s|\"|;$|,$/g, '').replace(/=/g, ':').replace(/;/g, ',').replace(/true/g, 1).replace(/(r|g|b|w|x|l|sat|of|on|ct)/g, '"$1"').replace(/^\{?(.*?)\}?$/, '{$1}');
-
+            var v = state.val.replace(/^on$|red|green|blue|transition|bri|off|#/g, function(match) { return { '#': '#', of:'off:1', on:'on:1', red:'r', green:'g', blue:'b', white: 'w', transition:'x', bri:'l', off:'on:0'}[match] });
+            v = v.replace(/\s|\"|;$|,$/g, '').replace(/=/g, ':').replace(/;/g, ',').replace(/true/g, 1).replace(/#((\d|[a-f]|[A-F])*)/g, 'h:"$1"').replace(/(r|g|b|w|x|l|sat|of|on|ct|h)/g, '"$1"').replace(/^\{?(.*?)\}?$/, '{$1}');
             try {
                 var colors = JSON.parse(v);
             } catch (e) {
                 adapter.log.error("on Command: " + e.message + ': state.val="' + state.val + '"');
                 return;
+            }
+            if (colors.h) {
+                var co = parseHexColor('#'+colors.h);
+                colors.r = co.r; colors.g = co.g; colors.b = co.b;
+                delete colors.h;
             }
             if (!colors || typeof colors !== 'object') return;
             var o = fullExtend(device.getRGBStates(channel), colors);
