@@ -1,12 +1,10 @@
 ﻿"use strict";
 
-var utils = require(__dirname + '/lib/utils'),
-    //soef = require(__dirname + '/lib/soef'),
-    soef = require('soef'),
-    //devices = new soef.Devices(),
-    net = require('net'),
+var //utils = require(__dirname + '/lib/utils'),
     discovery = require(__dirname + '/lib/discovery'),
-    colors = require(__dirname + '/lib/colors');
+    colors = require(__dirname + '/lib/colors'),
+    soef = require('soef'),
+    net = require('net');
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -34,53 +32,58 @@ Array.prototype.eq = function (arr) {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-var adapter = utils.adapter({
-    name: 'wifilight',
-
-    unload: function (callback) {
-        try {
-            for (var i in wifi) {
-                wifi[i].close();
-            }
-            callback();
-        } catch (e) {
-            callback();
+var adapter = soef.Adapter (
+    main,
+    onStateChange,
+    onMessage,
+    {
+        name: 'wifilight',
+        //discover: function (callback) {
+        //},
+        //install: function (callback) {
+        //},
+        uninstall: function (callback) {
         }
-    },
-    //discover: function (callback) {
-    //},
-    //install: function (callback) {
-    //},
-    //uninstall: function (callback) {
-    //},
-    objectChange: function (id, obj) {
-    },
-    stateChange: function (id, state) {
-        if (state && !state.ack) {
-            stateChange(id, state);
-        }
-    },
-    message: onMessage,
-    ready: function () {
-        soef.main(adapter, main);
-        //adapter.getForeignObject('system.adapter.' + adapter.namespace, function(err, obj) {
-        //    if (!err && obj && obj.common && obj.common.enabled === false) {
-        //        // running in debuger
-        //        adapter.log.debug = console.log;
-        //        adapter.log.info = console.log;
-        //        adapter.log.warn = console.log;
-        //        debug = true;
-        //    }
-        //    devices.init(adapter, function(err) {
-        //        main();
-        //    });
-        //});
-        //devices.init(adapter, function(err) {
-        //    main();
-        //});
+        //objectChange: function (id, obj) {
+        //}
     }
-});
+);
 
+
+//var utils = require(__dirname + '/lib/utils');
+//
+//var adapter = utils.adapter({
+//    name: 'wifilight',
+//
+//    unload: function (callback) {
+//        try {
+//            for (var i in wifi) {
+//                wifi[i].close();
+//            }
+//            callback();
+//        } catch (e) {
+//            callback();
+//        }
+//    },
+//    //discover: function (callback) {
+//    //},
+//    //install: function (callback) {
+//    //},
+//    //uninstall: function (callback) {
+//    //},
+//    objectChange: function (id, obj) {
+//    },
+//    stateChange: function (id, state) {
+//        if (state && !state.ack) {
+//            onStateChange(id, state);
+//        }
+//    },
+//    message: onMessage,
+//    ready: function () {
+//        soef.main(adapter, main);
+//    }
+//});
+//
 
 function onMessage (obj) {
     if (!obj) return;
@@ -118,11 +121,15 @@ function onMessage (obj) {
 
 var cmds = require(__dirname + '/devices');
 
+
 var usedStateNames = {
     online:      { n: 'reachable', val: 0,     common: { write: false, min: false, max: true }},
-    status:      { n: 'on',        val: false, common: { min: false, max: true }},
-    brightness:  { n: 'bri',       val: 0,     common: { min: 0, max: 100, unit: '%', desc: '0..100%' }},
-    temperature: { n: 'ct',        val: 0,     common: { min: 0, max: 5000, unit: '°K', desc: 'in °Kelvin 0..5000' }},
+    //status:      { n: 'on',        val: false, common: { min: false, max: true }},
+    on:          { n: 'on',        val: false, common: { min: false, max: true }},
+    //brightness:  { n: 'bri',       val: 0,     common: { min: 0, max: 100, unit: '%', desc: '0..100%' }},
+    bri:         { n: 'bri',       val: 0,     common: { min: 0, max: 100, unit: '%', desc: '0..100%' }},
+    //temperature: { n: 'ct',        val: 0,     common: { min: 0, max: 5000, unit: '°K', desc: 'temperature in °Kelvin 0..5000' }},
+    ct:          { n: 'ct',        val: 0,     common: { min: 0, max: 5000, unit: '°K', desc: 'temperature in °Kelvin 0..5000' }},
     red:         { n: 'r',         val: 0,     common: { min: 0, max: 255, desc: '0..255 or #rrggbb[ww] (hex)' }},
     green:       { n: 'g',         val: 0,     common: { min: 0, max: 255, desc: '0..255 or #rrggbb[ww] (hex)' }},
     blue:        { n: 'b',         val: 0,     common: { min: 0, max: 255, desc: '0..255 or #rrggbb[ww] (hex)' }},
@@ -138,7 +145,7 @@ var usedStateNames = {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-function parseHexColor(val) {
+function parseHexColors(val) {
     var co = {
         r: parseInt(val.substr(1, 2), 16),
         g: parseInt(val.substr(3, 2), 16) || 0,
@@ -148,7 +155,7 @@ function parseHexColor(val) {
     return co;
 }
 
-function stateChange(id, state) {
+function onStateChange(id, state) {
     var ar = id.split('.');
     //var dcs = adapter.idToDCS(id);
     var deviceName = ar[2], stateName = ar[3];
@@ -157,6 +164,7 @@ function stateChange(id, state) {
     var channel = "";
     var transitionTime = device.get(channel, usedStateNames.transition.n).val || 3;
     device.clearQueue();
+    devices.invalidate(id);
     switch (stateName) {
         case 'on':
             device.on_off(channel, state.val >> 0 ? true : false);
@@ -168,12 +176,6 @@ function stateChange(id, state) {
         case 'sat':
             if (typeof state.val == 'string' && state.val[0] == '#') {
                 var co = parseHexColors(state.val);
-                //var co = {
-                //    r: parseInt(state.val.substr(1, 2), 16),
-                //    g: parseInt(state.val.substr(3, 2), 16),
-                //    b: parseInt(state.val.substr(5, 2), 16),
-                //    w: state.val.length > 7 ? parseInt(state.val.substr(7, 2), 16) : undefined
-                //};
                 device.color(channel, co);
                 break;
             }
@@ -181,11 +183,17 @@ function stateChange(id, state) {
             colors[stateName] = state.val >> 0;
             device.color(channel, colors);
             break;
-        case usedStateNames.brightness.n:
-            device.brightness(channel, state.val >> 0, transitionTime);
+        case usedStateNames.refresh.n:
+            device.refresh();
+            device.dev.set(usedStateNames.refresh.n, false);
+            device.dev.update();
+            //devices.update();
             break;
-        case usedStateNames.temperature.n:
-            device.temperature(channel, state.val >> 0, transitionTime);
+        case usedStateNames.bri.n:
+            device.bri(channel, state.val >> 0, transitionTime);
+            break;
+        case usedStateNames.ct.n:
+            device.ct(channel, state.val >> 0, transitionTime);
             break;
         case usedStateNames.progSpeed.n:
             var progNo = device.get(channel, usedStateNames.progNo.n).val;
@@ -208,8 +216,10 @@ function stateChange(id, state) {
             device.addToQueue(channel, state.val ? device.cmds.progOn : device.cmds.progOff);
             break;
         case usedStateNames.command.n:
-            var v = state.val.replace(/^on$|red|green|blue|transition|bri|off|#/g, function(match) { return { '#': '#', of:'off:1', on:'on:1', red:'r', green:'g', blue:'b', white: 'w', transition:'x', bri:'l', off:'on:0'}[match] });
-            v = v.replace(/\s|\"|;$|,$/g, '').replace(/=/g, ':').replace(/;/g, ',').replace(/true/g, 1).replace(/#((\d|[a-f]|[A-F])*)/g, 'h:"$1"').replace(/(r|g|b|w|x|l|sat|of|on|ct|h)/g, '"$1"').replace(/^\{?(.*?)\}?$/, '{$1}');
+            //var v = state.val.replace(/^on$|red|green|blue|transition|bri|off|#/g, function(match) { return { '#': '#', of:'off:1', on:'on:1', red:'r', green:'g', blue:'b', white: 'w', transition:'x', bri:'l', off:'on:0'}[match] });
+            //v = v.replace(/\s|\"|;$|,$/g, '').replace(/=/g, ':').replace(/;/g, ',').replace(/true/g, 1).replace(/#((\d|[a-f]|[A-F])*)/g, 'h:"$1"').replace(/(r|g|b|w|x|l|sat|of|on|ct|h)/g, '"$1"').replace(/^\{?(.*?)\}?$/, '{$1}');
+            var v = state.val.replace(/(^on$|red|green|blue|transition|bri|off)/g, function(match, p) { return { '#': '#', off:'off:1', on:'on:1', red:'r', green:'g', blue:'b', white: 'w', transition:'x', bri:'l'/*, off:'on:0'*/} [match] });
+            v = v.replace(/\s|\"|;$|,$/g, '').replace(/=/g, ':').replace(/;/g, ',').replace(/true/g, 1).replace(/((on|off),{1})/g, '$2:1,').replace(/#((\d|[a-f]|[A-F])*)/g, 'h:"$1"').replace(/(r|g|b|w|x|l|sat|off|on|ct|h)/g, '"$1"').replace(/^\{?(.*?)\}?$/, '{$1}');
             try {
                 var colors = JSON.parse(v);
             } catch (e) {
@@ -217,19 +227,23 @@ function stateChange(id, state) {
                 return;
             }
             if (colors.h) {
-                var co = parseHexColor('#'+colors.h);
+                var co = parseHexColors('#'+colors.h);
                 colors.r = co.r; colors.g = co.g; colors.b = co.b;
                 delete colors.h;
             }
             if (!colors || typeof colors !== 'object') return;
+            if(colors.off !== undefined) {
+                device.color(channel, {r:0, g:0, b:0, w: colors.w != undefined ? 0 : undefined});
+                device.states.red = 0; device.states.green = 0; device.states.blue = 0; if (device.states.white != undefined) device.states.white = 0;
+            }
             var o = fullExtend(device.getRGBStates(channel), colors);
             adapter.log.debug(JSON.stringify(o));
             if (o.x !== undefined) {
                 transitionTime = o.x >> 0;
             }
-            if(o.of !== undefined) {
-                device.color(channel, {r:0, g:0, b:0, w: o.w != undefined ? 0 : undefined});
-            }
+            //if(o.of !== undefined) {
+            //    device.color(channel, {r:0, g:0, b:0, w: o.w != undefined ? 0 : undefined});
+            //}
             if (o['on'] !== undefined) {
                 device.on_off(channel, o.on >> 0 ? true : false);
             }
@@ -237,10 +251,10 @@ function stateChange(id, state) {
                 device.fade(channel, o, transitionTime);
             }
             if (o['ct'] !== undefined) {
-                device.temperature(channel, o.ct >> 0, transitionTime);
+                device.ct(channel, o.ct >> 0, transitionTime);
             }
             if (o['l'] !== undefined) {
-                device.brightness(channel, o.l >> 0, transitionTime);
+                device.bri(channel, o.l >> 0, transitionTime);
             }
             break;
         default:
@@ -299,9 +313,12 @@ wifiLight.prototype.createDevice = function (cb) {
 };
 
 wifiLight.prototype.reconnect = function (cb, timeout) {
+    if (cb && typeof cb != 'function') {
+        timeout = cb;
+        cb = unknown;
+    }
     if (this.client) {
         this.destroyClient();
-        //setTimeout(this.start.bind(this), 5000);
         setTimeout(this.start.bind(this, cb), timeout == undefined ? 5000 : timeout);
     }
 };
@@ -360,7 +377,8 @@ wifiLight.prototype.start = function (cb) {
         self.log(self.config.ip + ' connected');
         self.setOnline(true);
         self.runUpdateTimer();
-        if (cb) cb();
+        adapter.log.debug('self.client.connect: connected');
+        if (cb && typeof cb == 'function') cb();
     });
 };
 
@@ -460,12 +478,10 @@ wifiLight.prototype.write = function(channel, cmd, cb) {
     this.log('write: ' + hex(buf));
     if (!this.isOnline) {
         this.reconnect(function() {
-            //this.USE_SOCKET_ONCE ? this._write(buf, cb) : this.client.write(buf, cb);
             this._write(buf, cb);
         }.bind(this), 0);
         return;
     }
-    //this.USE_SOCKET_ONCE ? this._write(buf, cb) : this.client.write(buf, cb);
     this._write(buf, cb);
 };
 
@@ -597,57 +613,13 @@ wifiLight.prototype.fade = function (channel, rgbw, transitionTime) {
     }
 };
 
-
-//wifiLight.prototype.fade = function (channel, rgbw,g,b, transitionTime) {
-//    if (typeof rgbw != 'object') {
-//        rgbw = { g: g, b: b, r: rgbw };
-//    } else {
-//        transitionTime = g;
-//    }
-//    if (transitionTime === 0) {
-//        this.color(channel, rgbw);
-//        return;
-//    }
-//    var co = { r: this.states.red, g: this.states.green, b: this.states.blue, w: this.states.white};
-//    var dif= { r: rgbw.r - co.r, g: rgbw.g - co.g, b: rgbw.b - co.b};
-//    dif.w = (rgbw.w != undefined && co.w != undefined) ? rgbw.w - co.w : 0;
-//    var maxSteps = Math.max(Math.abs(dif.r), Math.abs(dif.g), Math.abs(dif.b), Math.abs(dif.w), 1);
-//    dif.r /= maxSteps;
-//    dif.g /= maxSteps;
-//    dif.b /= maxSteps;
-//    dif.w /= maxSteps;
-//
-//    var steps = maxSteps;
-//    var delay = parseInt(transitionTime*100 / maxSteps);
-//
-//    for (var i = 0; i<steps; i++) {
-//        co.r += dif.r;
-//        co.g += dif.g;
-//        co.b += dif.b;
-//        if (co.w != undefined) co.w += dif.w;
-//        this.color(channel, roundRGB(co, true), { delay:delay });
-//    }
-//};
-
-//wifiLight.prototype.color = function (channel, rgbw, g, b, opt) {
-//    if (typeof rgbw != 'object') {
-//        rgbw = { g: g, b: b, r: rgbw };
-//    } else {
-//        opt = g;
-//    }
-//    rgbw.w == undefined ?
-//        this.addToQueue(channel, this.cmds.rgb, rgbw.r, rgbw.g, rgbw.b, opt) :
-//        this.addToQueue(channel, this.cmds.rgbw, rgbw.r, rgbw.g, rgbw.b, rgbw.w, opt);
-//};
-
 wifiLight.prototype.color = function (channel, rgbw, opt) {
     rgbw.w == undefined ?
         this.addToQueue(channel, this.cmds.rgb, rgbw.r, rgbw.g, rgbw.b, opt) :
         this.addToQueue(channel, this.cmds.rgbw, rgbw.r, rgbw.g, rgbw.b, rgbw.w, opt);
 };
 
-
-wifiLight.prototype.temperature = function (channel, temp, transitionTime) {
+wifiLight.prototype.ct = function (channel, temp, transitionTime) {
     var co = ct2rgb(temp);
     var hsv = rgb2hsv(co);
     //hsv.v = this.get(channel, 'bri').val;
@@ -656,6 +628,7 @@ wifiLight.prototype.temperature = function (channel, temp, transitionTime) {
     co = hsv2rgb(hsv);
     this.fade(channel, co, transitionTime);
 };
+wifiLight.prototype.temperature = wifiLight.prototype.ct;
 
 wifiLight.prototype.getRGBStates = function (channel) {
     return {
@@ -666,23 +639,18 @@ wifiLight.prototype.getRGBStates = function (channel) {
     };
 };
 
-wifiLight.prototype.brightness = function (channel, bri, transitionTime) {
+wifiLight.prototype.bri = function (channel, bri, transitionTime) {
     var co = this.getRGBStates(channel);
     var hsv = rgb2hsv(co);
     hsv.v = Math.max (Math.min(bri, 100), 0);
     co = hsv2rgb(hsv);
     this.fade(channel, co, transitionTime);
 };
+wifiLight.prototype.brightness = wifiLight.prototype.bri;
 
 
 wifiLight.prototype.onData = function (data) {
 
-    var self = this;
-    function set(n, val) {
-        if (val != undefined) self.dev.set(n, val);
-    }
-
-    var self = this;
     var newPos = this.dataBuffer.pos + data.length;
     if (newPos > this.dataBuffer.length) {
         var b = new Uint8Array(newPos + 200);
@@ -710,70 +678,26 @@ wifiLight.prototype.onData = function (data) {
         this.states = states;
         this.log('onData: ' + JSON.stringify(this.states));
         if (this.states) {
-            set(usedStateNames.status.n, this.states.power);
-            set(usedStateNames.red.n, this.states.red);
-            set(usedStateNames.green.n, this.states.green);
-            set(usedStateNames.blue.n, this.states.blue);
-            set(usedStateNames.progNo.n, this.states.progNo);
-            set(usedStateNames.progOn.n, this.states.progOn);
-            set(usedStateNames.progSpeed.n, this.states.progSpeed);
-            set(usedStateNames.white.n, this.states.white);
+            //set(usedStateNames.status.n, this.states.power);
+            this.dev.set(usedStateNames.on.n, this.states.on);
+            this.dev.set(usedStateNames.red.n, this.states.red);
+            this.dev.set(usedStateNames.green.n, this.states.green);
+            this.dev.set(usedStateNames.blue.n, this.states.blue);
+            this.dev.set(usedStateNames.progNo.n, this.states.progNo);
+            this.dev.set(usedStateNames.progOn.n, this.states.progOn);
+            this.dev.set(usedStateNames.progSpeed.n, this.states.progSpeed);
+            this.dev.set(usedStateNames.white.n, this.states.white);
             devices.update();
         }
     }
     return this.states;
 };
 
-
-//wifiLight.prototype.xonData = function (data) {
-//
-//    var self = this;
-//    function set(n, val) {
-//        if (val != undefined) self.dev.set(n, val);
-//    }
-//
-//    var self = this;
-//
-//    this.dataBuffer.concat(data.buffer);
-//    data.forEach(function(val) {
-//        self.dataBuffer.push(val);
-//    });
-//    //this.dataBuffer.splice(this.dataBuffer.length, 0, data);
-//
-//    if (this.dataBuffer.length < this.cmds.responsLen) {
-//        return null;
-//    }
-//
-//    //var len = this.cmds.responsLen ? this.cmds.responsLen : data.length;
-//    while (this.dataBuffer.length >= this.cmds.responseLen)
-//    //for (var i=0; i<data.length; i+=len)
-//    {
-//        var buf = this.dataBuffer.splice(0, this.cmds.responseLen);
-//        //var buf = data.slice(i, i + len);
-//        var states = this.cmds.decodeResponse(buf);
-//        if (!states) break;
-//        this.states = states;
-//        //var result = this.cmds.decodeResponse(data);
-//        adapter.log.debug('onData: raw:' + JSON.stringify(buf));
-//        adapter.log.debug('onData: ' + JSON.stringify(this.states));
-//        if (this.states) {
-//            set(usedStateNames.status.n, this.states.power);
-//            set(usedStateNames.red.n, this.states.red);
-//            set(usedStateNames.green.n, this.states.green);
-//            set(usedStateNames.blue.n, this.states.blue);
-//            set(usedStateNames.progNo.n, this.states.progNo);
-//            set(usedStateNames.progOn.n, this.states.progOn);
-//            set(usedStateNames.progSpeed.n, this.states.progSpeed);
-//            devices.update();
-//        }
-//    }
-//    return this.states;
-//};
-
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 function normalizeConfigDevice(dev) {
     dev.pollIntervall = parseInt(dev.pollIntervall) | 0;
+    if (dev.pollIntervall && dev.pollIntervall < 5) dev.pollIntervall = 5;
     dev.port = parseInt(dev.port) || 5577;
 }
 

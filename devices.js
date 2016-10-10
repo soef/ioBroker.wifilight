@@ -57,7 +57,8 @@ exports.LW12 = {
     decodeResponse: function(data) {
         if (data[0] != 0x66 || data[1] != 0x01) return null;
         var result = {
-            power: ((data[2] === 0x23) ? true : false),
+            //power: ((data[2] === 0x23) ? true : false),
+            on: ((data[2] === 0x23) ? true : false),
             progNo: data[3],//mode
             progOn: data[4] === 33, //modeRun
             rogSpeed: data[5], //modeSpeed
@@ -92,7 +93,8 @@ exports.LD382A = {
         if (data[0] !== 129) return null;
         //[129, 4, 35, 97, 33, 9, 11, 22, 33, 255, 3, 0, 0, 119]
         return {
-            power: ((data[2] === 0x23) ? true : false),
+            //power: ((data[2] === 0x23) ? true : false),
+            on: ((data[2] === 0x23) ? true : false),
             //power: ((data[13] & 0x01) ? true : false),
             //power: ((data[13] & 0x01) ? false : true),
             progNo: data[3],//mode
@@ -125,7 +127,8 @@ exports.LD382 = { // not tested
         if (data[0] !== 129) return null;
         //[129, 4, 35, 97, 33, 9, 11, 22, 33, 255, 3, 0, 0, 119]
         return {
-            power: ((data[2] === 0x23) ? true : false),
+            //power: ((data[2] === 0x23) ? true : false),
+            on: ((data[2] === 0x23) ? true : false),
             //power: ((data[13] & 0x01) ? true : false),
             //power: ((data[13] & 0x01) ? false : true),
             progNo: data[3],//mode
