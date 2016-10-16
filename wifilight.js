@@ -1,7 +1,6 @@
 ﻿"use strict";
 
-var //utils = require(__dirname + '/lib/utils'),
-    discovery = require(__dirname + '/lib/discovery'),
+var discovery = require(__dirname + '/lib/discovery'),
     colors = require(__dirname + '/lib/colors'),
     soef = require('soef'),
     net = require('net');
@@ -13,11 +12,15 @@ var debug = false;
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+Number.prototype.toHex = function () {
+    return ('0' + this.toString(16)).substr(-2);
+};
+
 function hex(ar, len) {
     var s = "";
     if (len == undefined) len = ar.length;
     for (var i=0; i<len; i++) {
-        s += ('0' + ar[i].toString(16)).substr(-2) + ' ';
+        s += ar[i].toHex() + ' ';
     }
     return s;
 }
@@ -49,41 +52,7 @@ var adapter = soef.Adapter (
     }
 );
 
-
-//var utils = require(__dirname + '/lib/utils');
-//
-//var adapter = utils.adapter({
-//    name: 'wifilight',
-//
-//    unload: function (callback) {
-//        try {
-//            for (var i in wifi) {
-//                wifi[i].close();
-//            }
-//            callback();
-//        } catch (e) {
-//            callback();
-//        }
-//    },
-//    //discover: function (callback) {
-//    //},
-//    //install: function (callback) {
-//    //},
-//    //uninstall: function (callback) {
-//    //},
-//    objectChange: function (id, obj) {
-//    },
-//    stateChange: function (id, state) {
-//        if (state && !state.ack) {
-//            onStateChange(id, state);
-//        }
-//    },
-//    message: onMessage,
-//    ready: function () {
-//        soef.main(adapter, main);
-//    }
-//});
-//
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 function onMessage (obj) {
     if (!obj) return;
@@ -121,7 +90,6 @@ function onMessage (obj) {
 
 var cmds = require(__dirname + '/devices');
 
-
 var usedStateNames = {
     online:      { n: 'reachable', val: 0,     common: { write: false, min: false, max: true }},
     //status:      { n: 'on',        val: false, common: { min: false, max: true }},
@@ -140,18 +108,33 @@ var usedStateNames = {
     refresh:     { n: 'refresh',   val: false, common: { min: false, max: true, desc: 'read states from device' }},
     //alpha:       { n: 'sat',       val: 0, common: { min: 0, max: 255 }},
     transition:  { n: 'trans',     val: 30,    common: { unit: '\u2152 s', desc: 'in 10th seconds'} },
-    command:     { n: 'command',   val: 'r:0, g:0, b:0, on:true, transition:30', desc: 'r:0, g:0, b:0, on:true, transition:2' }
+    command:     { n: 'command',   val: 'r:0, g:0, b:0, on:true, transition:30', desc: 'r:0, g:0, b:0, on:true, transition:2' },
+    rgb:         { n: 'rgb',       val: '',    common: { desc: '000000..ffffff' }}
+
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 function parseHexColors(val) {
+    val = val.toString();
+    var ar = val.split('.');
+    if (ar && ar.length > 1) val = ar[0];
+    if (val[0] === '#') val = val.substr(1);
     var co = {
-        r: parseInt(val.substr(1, 2), 16),
-        g: parseInt(val.substr(3, 2), 16) || 0,
-        b: parseInt(val.substr(5, 2), 16) || 0,
-        w: val.length > 7 ? parseInt(val.substr(7, 2), 16) : undefined
+        r: parseInt(val.substr(0, 2), 16),
+        g: parseInt(val.substr(2, 2), 16) || 0,
+        b: parseInt(val.substr(4, 2), 16) || 0 //,
     };
+    if (val.length > 7) {
+        co.w = parseInt(val.substr(6, 2), 16);
+    }
+    if (ar && ar.length > 1) {
+        var m = Number('.' + ar[1]);
+        for (var i in co) {
+            co[i] *= m;
+        }
+        roundRGB(co);
+    }
     return co;
 }
 
@@ -169,25 +152,29 @@ function onStateChange(id, state) {
         case 'on':
             device.on_off(channel, state.val >> 0 ? true : false);
             break;
+        case 'rgbw':
+        case 'rgb':
+            var co = parseHexColors(state.val);
+            device.color(channel, co);
+            break;
         case 'r':
         case 'g':
         case 'b':
         case 'w':
         case 'sat':
+            var co;
             if (typeof state.val == 'string' && state.val[0] == '#') {
-                var co = parseHexColors(state.val);
-                device.color(channel, co);
-                break;
+                co = parseHexColors(state.val);
+            } else {
+                co = device.getRGBStates(channel);
+                co[stateName] = state.val >> 0;
             }
-            var colors = device.getRGBStates(channel);
-            colors[stateName] = state.val >> 0;
-            device.color(channel, colors);
+            device.color(channel, co);
             break;
         case usedStateNames.refresh.n:
             device.refresh();
             device.dev.set(usedStateNames.refresh.n, false);
             device.dev.update();
-            //devices.update();
             break;
         case usedStateNames.bri.n:
             device.bri(channel, state.val >> 0, transitionTime);
@@ -216,10 +203,9 @@ function onStateChange(id, state) {
             device.addToQueue(channel, state.val ? device.cmds.progOn : device.cmds.progOff);
             break;
         case usedStateNames.command.n:
-            //var v = state.val.replace(/^on$|red|green|blue|transition|bri|off|#/g, function(match) { return { '#': '#', of:'off:1', on:'on:1', red:'r', green:'g', blue:'b', white: 'w', transition:'x', bri:'l', off:'on:0'}[match] });
-            //v = v.replace(/\s|\"|;$|,$/g, '').replace(/=/g, ':').replace(/;/g, ',').replace(/true/g, 1).replace(/#((\d|[a-f]|[A-F])*)/g, 'h:"$1"').replace(/(r|g|b|w|x|l|sat|of|on|ct|h)/g, '"$1"').replace(/^\{?(.*?)\}?$/, '{$1}');
             var v = state.val.replace(/(^on$|red|green|blue|transition|bri|off)/g, function(match, p) { return { '#': '#', off:'off:1', on:'on:1', red:'r', green:'g', blue:'b', white: 'w', transition:'x', bri:'l'/*, off:'on:0'*/} [match] });
-            v = v.replace(/\s|\"|;$|,$/g, '').replace(/=/g, ':').replace(/;/g, ',').replace(/true/g, 1).replace(/((on|off),{1})/g, '$2:1,').replace(/#((\d|[a-f]|[A-F])*)/g, 'h:"$1"').replace(/(r|g|b|w|x|l|sat|off|on|ct|h)/g, '"$1"').replace(/^\{?(.*?)\}?$/, '{$1}');
+            //v = v.replace(/\s|\"|;$|,$/g, '').replace(/=/g, ':').replace(/;/g, ',').replace(/true/g, 1).replace(/((on|off),{1})/g, '$2:1,').replace(/#((\d|[a-f]|[A-F])*)/g, 'h:"$1"').replace(/(r|g|b|w|x|l|sat|off|on|ct|h)/g, '"$1"').replace(/^\{?(.*?)\}?$/, '{$1}');
+            v = v.replace(/\s|\"|;$|,$/g, '').replace(/=/g, ':').replace(/;/g, ',').replace(/true/g, 1).replace(/((on|off),{1})/g, '$2:1,').replace(/#((\d|[a-f]|[A-F]|[.])*)/g, 'h:"$1"').replace(/(r|g|b|w|x|l|sat|off|on|ct|h)/g, '"$1"').replace(/^\{?(.*?)\}?$/, '{$1}');
             try {
                 var colors = JSON.parse(v);
             } catch (e) {
@@ -228,7 +214,10 @@ function onStateChange(id, state) {
             }
             if (colors.h) {
                 var co = parseHexColors('#'+colors.h);
-                colors.r = co.r; colors.g = co.g; colors.b = co.b;
+                //colors = Object.assign(colors, co);
+                for (var i in co) {
+                    colors[i] = co[i];
+                }
                 delete colors.h;
             }
             if (!colors || typeof colors !== 'object') return;
@@ -241,9 +230,6 @@ function onStateChange(id, state) {
             if (o.x !== undefined) {
                 transitionTime = o.x >> 0;
             }
-            //if(o.of !== undefined) {
-            //    device.color(channel, {r:0, g:0, b:0, w: o.w != undefined ? 0 : undefined});
-            //}
             if (o['on'] !== undefined) {
                 device.on_off(channel, o.on >> 0 ? true : false);
             }
@@ -315,7 +301,7 @@ wifiLight.prototype.createDevice = function (cb) {
 wifiLight.prototype.reconnect = function (cb, timeout) {
     if (cb && typeof cb != 'function') {
         timeout = cb;
-        cb = unknown;
+        cb = undefined;
     }
     if (this.client) {
         this.destroyClient();
@@ -365,11 +351,6 @@ wifiLight.prototype.start = function (cb) {
         self.setOnline(false);
     });
     //self.client.on('connect', function(error) {
-    //    wifi[self.dev.getFullId()] = self;
-    //    self.log(self.config.ip + ' connected');
-    //    self.setOnline(true);
-    //    self.runUpdateTimer();
-    //    if (cb) cb();
     //});
 
     self.client.connect(self.config.port, self.config.ip, function() {
@@ -565,28 +546,6 @@ wifiLight.prototype.on_off = function (channel, state) {
     this.addToQueue(channel, state ? this.cmds.on : this.cmds.off);
 };
 
-//wifiLight.prototype.dim = function (channel, level, time) {
-//    var co = { r:0, g:0, b:0 };
-//
-//    var max = parseInt(level*255/100);
-//    var steps = parseInt(max * 54 / 100);
-//    var delay = parseInt(time*1000 / steps);
-//    var dif = 1;
-//
-//    for (var i = 0; i<steps; i++) {
-//        this.color(channel, co.r, co.g, co.b, { delay:delay });
-//        co.r += dif;
-//        co.g += dif;
-//        co.b += dif;
-//        if (co.r > max || co.g > max || co.b > max) {
-//            break;
-//        }
-//        var p = parseInt(i*5 / steps);
-//        if (p>dif) dif = p;
-//    }
-//    //this.ad(channel, state ? this.cmds.on : this.cmds.off);
-//};
-
 wifiLight.prototype.fade = function (channel, rgbw, transitionTime) {
     if (!transitionTime) {
         this.color(channel, rgbw);
@@ -667,9 +626,6 @@ wifiLight.prototype.onData = function (data) {
 
     while (this.dataBuffer.pos >= this.cmds.responseLen)
     {
-        //var buf = this.dataBuffer.subarray(0, this.cmds.responseLen);
-        //var buf = new Buffer(this.dataBuffer, 0, this.cmds.responseLen);
-        //var states = this.cmds.decodeResponse(buf);
         var states = this.cmds.decodeResponse(this.dataBuffer);
         this.log('onData: raw: ' + hex(this.dataBuffer, this.cmds.responseLen));
         this.dataBuffer.copyWithin(0, this.cmds.responseLen, this.dataBuffer.pos);
@@ -687,6 +643,9 @@ wifiLight.prototype.onData = function (data) {
             this.dev.set(usedStateNames.progOn.n, this.states.progOn);
             this.dev.set(usedStateNames.progSpeed.n, this.states.progSpeed);
             this.dev.set(usedStateNames.white.n, this.states.white);
+            var rgb = '#' + this.states.red.toHex() + this.states.green.toHex() + this.states.blue.toHex();
+            if (this.states.white != undefined) rgb += this.states.white.toHex();
+            this.dev.set(usedStateNames.rgb.n, rgb);
             devices.update();
         }
     }
@@ -712,5 +671,6 @@ function main() {
     }
     devices.update();
     adapter.subscribeStates('*');
+    adapter.subscribeObjects('*');
 }
 
