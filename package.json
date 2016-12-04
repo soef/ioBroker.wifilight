@@ -1,6 +1,6 @@
 {
   "name": "iobroker.wifilight",
-  "version": "0.0.18",
+  "version": "0.0.22",
   "description": "WiFi Light Adapter",
   "author": {
     "name": "soef",
@@ -26,7 +26,7 @@
   },
   "dependencies": {
     "netmask": "^1.0.6",
-    "soef": "^0.1.1"
+    "soef": "^0.1.19"
   },
   "devDependencies": {},
   "bugs": {
