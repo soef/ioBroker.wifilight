@@ -113,39 +113,8 @@ exports.LD382A = {
     }
 };
 
-exports.LD382 = { // not tested
-    useCheckSum: true,
-    port: 5577,
-
-    delay: 10,
-    responseLen: 14,
-    on: [0x71, 0x23, 0x0f],
-    off: [0x71, 0x24, 0x0f],
-    rgb: [0x31, VARS.red, VARS.green, VARS.blue, 0xff /*VARS.white*/, 0x00, 0x0f],
-    progOn: [0x71, 0x21, 0x0f],
-    progOff: [0x71, 0x20, 0x0f],
-    progNo: [97, VARS.prog, VARS.speed, 0x0f],
-    statusRequest: [0x81, 0x8A, 0x8B],
-    programNames: programNames,
-
-    decodeResponse: function(data) {
-        if (data[0] !== 129) return null;
-        //[129, 4, 35, 97, 33, 9, 11, 22, 33, 255, 3, 0, 0, 119]
-        return {
-            //power: ((data[2] === 0x23) ? true : false),
-            on: ((data[2] === 0x23) ? true : false),
-            //power: ((data[13] & 0x01) ? true : false),
-            //power: ((data[13] & 0x01) ? false : true),
-            progNo: data[3],//mode
-            progOn: data[4] === 33, //modeRun
-            progSpeed: data[5], //modeSpeed
-            red: data[6],
-            green: data[7],
-            blue: data[8],
-            white: data[9]
-        };
-    }
-};
+exports.LD382 = Object.assign(exports.LD382A, { // not tested
+});
 
 
 //LimitlessLED
@@ -156,15 +125,8 @@ exports.MiLight = {
     onlyConnectOnWrite: true,
     broadcastIP: '255.255.255.255',
     g: 2,
-    //onlyConnectOnWrite: true,
-    
-    dimSteps: 25,  // RGBW
-    //dimSteps: 11,  // white
-    //dimSteps:  9,  // RGB
-    colorSteps: 255, // RGBW
-    //colorSteps: 11, // white
-    //colorSteps: 255, // RGB
-    
+    dimSteps: 25,
+    colorSteps: 255,
     delay: 100,
     
     setZone: function(zone) {
@@ -245,9 +207,6 @@ exports.MiLight = {
 
     rgb: [0x00],
     rgbw: [0x00],
-    //progOn: [0x71, 0x21, 0x0f],
-    //progOff: [0x71, 0x20, 0x0f],
-    //statusRequest: [0x81, 0x8A, 0x8B],
     programNames: {
         0: '[Off]',
         1: 'Regenbogen',
@@ -290,134 +249,32 @@ exports.MiLight = {
     }
 };
 
-
-exports.MiLightRGB = {
-    //http://www.limitlessled.com/dev/
-    port: 8899,
-    udp: true,
-    onlyConnectOnWrite: true,
-    broadcastIP: '255.255.255.255',
+exports.MiLightRGB = Object.assign (exports.MiLight, {
     g: 2,
-    //onlyConnectOnWrite: true,
-    
-    dimSteps: 9,  // GBW
-    //dimSteps: 11,  // white
-    colorSteps: 255, // RGBW
-    //colorSteps: 11, // white
-    //colorSteps: 255, // RGB
-    
-    delay: 100,
-    responseLen: 14,
-    
-    setZone: function(zone) {
-        var self = this;
-        if (zone > 4) zone = 0;
-        self.on[0]          = [0x42,0x45,0x47,0x49,0x4B][zone];
-        self.off[0]         = [0x41,0x46,0x48,0x4A,0x4C][zone];
-        self.whiteMode[0]   = [0xC2,0xC5,0xC7,0xC9,0xCB][zone];
-        self.nightMode[0]   = [0xC1,0xC6,0xC8,0xCA,0xCC][zone];
-        self.maxBright[0]   = [0xB5,0xB8,0xBD,0xB7,0xB2][zone];
-        
-        self.wtOn[0]        = [0x35,0x38,0x3D,0x37,0x32][zone];
-        self.wtOff[0]       = [0x39,0x3B,0x33,0x3A,0x36][zone];
-        self.wtNightMode[0] = [0xB9,0xBB,0xB3,0xBA,0xB6][zone];
-        self.wtmaxBright[0] = [0xB5,0xB8,0xBD,0xB7,0xB2][zone];
-        // for (var p in self) {
-        //     if (typeof self[p] === 'function') {
-        //         self[p].bind(self);
-        //     }
-        // }
-        self.pair = self.on; // send 3 x with 1 sec delay
-        self.unPair = self.on; // send 15 x with 200 ms delay
-    },
+    dimSteps: 9,
+    colorSteps: 255,
     
     on:        [0x22,0x00,0x55],
     off:       [0x21,0x00,0x55],
-    //off:       [0x41,0x00],
-    // whiteMode: [0xc2,0x00,0x55],
-    // nightMode: [0xC1,0x00,0x55],
-    // maxBright: [0xB5,0x00,0x55],
-    //
-    // discoMode: [0x4D,0x00,0x55],
     discoModeUp: [0x27, 0x00, 0x55],
     discoModeDown: [0x28, 0x00, 0x55],
     discoSpeedSlower: [0x26,0x00,0x55],
     discoSpeedFaster: [0x25,0x00,0x55],
-    //
-    //
-    // wtOn: [0x35,0x00,0x55],
-    // wtOff:[0x39,0x00,0x55],
-    // wtNightMode:[0xB9,0x00,0x55],
-    // wtmaxBright:[0xB5,0x00,0x55],
-    // wtBrightUp: [0x3C,0x00,0x55],
-    // wtBrightDown: [0x34,0x00,0x55],
-    // wtWarmer: [0x3E,0x00,0x55],
-    // wtCooler: [0x3F,0x00,0x55],
-    //
-    // progNo: [0x4D,0x00,0x55],
-    
-    
-    //////////////////////////////////////////////////////////////////////////////
-    
-    rgb: [0x31, VARS.red, VARS.green, VARS.blue, 0xff /*VARS.white*/, 0x00, 0x0f],
-    rgbw: [0x31, VARS.red, VARS.green, VARS.blue, VARS.white, 0x00, 0x0f],
-    progOn: [0x71, 0x21, 0x0f],
-    progOff: [0x71, 0x20, 0x0f],
-    //statusRequest: [0x81, 0x8A, 0x8B],
-    programNames: {
-        1: 'Regenbogen',
-        2: 'Weiß Blinken',
-        3: 'Farbverlauf',
-        4: 'Farbwechsel',
-        5: 'Flash (alle Farben)',
-        6: 'Disco',
-        7: '7',
-        8: '8',
-        9: 'Fade - Blinken (rot)',
-        10: 'Fade - Blinken (grün)',
-        11: 'Fade - Blinken (blau)',
-        12: '12',
-        13: '13',
-        14: '14',
-        15: '15',
-        16: '16',
-        17: '17',
-        18: '18',
-        19: '19',
-        20: '20'
-    },
-    
-    _color: function(hue) {
-        //return this.on.concat(VARS.separator, [0x40, hue, 0x55]);
-        return [].concat(this.on, 0x20, hue, 0x55);
-    },
     
     briDown: [0x24, 0x00, 0x55],
     briUp: [0x23, 0x00, 0x55],
+
     _bri: function(percent) {
-        //if (percent >= 100) return this.on.concat(VARS.separator, this.maxBright);
         var bri = Math.floor(2 + (((percent||0) / 100) * this.dimSteps));
         var cmd = [].concat(this.on);
         for (i=0; i<bri; i++) {
             cmd.push(this.briUp);
         }
     },
-    _setProgNo: function (zone, no) {
-        var cmd = [this.on[0], 0x00, 0x40, 0x40, this.on[0], 0x00, /*0x4e, 0x02*/];
-        while (no--) {
-            cmd.push(0x4d);
-            cmd.push(0x00);
-        }
-        // var cmd = [this.on[0], 0x00, 0x55,
-        //            //0x40, 0x40,
-        //            this.on[0], 0x00, 0x55/*0x4e, 0x02*/];
-        //
-        // while (no--) {
-        //     cmd.push(0x4d);
-        //     cmd.push(0x00);
-        //     cmd.push(0x55);
-        // }
-        
-        return cmd;
-    }
-};
+});
+
+exports.MiLightW = Object.assign (exports.MiLight, {
+    g: 2,
+    dimSteps: 11,
+    colorSteps: 11,
+});

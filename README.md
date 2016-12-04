@@ -5,7 +5,7 @@ ioBroker Adapter for WiFi Light
 
 #### Info
 Supports LW12, LD382 and LD382A.
-Support for Mi-Light RGBW added.
+Support for Mi-Light/LimitlessLED RGBW added.
 
 ###### How to use the command state:
 + Possible identifiers are: ``red, r, green, g, blue, b, bri, sat, transition, on, off``

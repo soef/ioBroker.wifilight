@@ -26,7 +26,7 @@
   },
   "dependencies": {
     "netmask": "^1.0.6",
-    "soef": "^0.1.19"
+    "soef": "^0.1.21"
   },
   "devDependencies": {},
   "bugs": {

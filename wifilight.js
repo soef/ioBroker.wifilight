@@ -10,7 +10,6 @@ var discovery = require(__dirname + '/lib/discovery'),
 var wifi = {};
 var debug = false;
 
-
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 soef.extendAll();
@@ -23,17 +22,7 @@ var adapter = soef.Adapter (
     onStateChange,
     onMessage,
     onUnload,
-    {
-        name: 'wifilight',
-        //discover: function (callback) {
-        //},
-        //install: function (callback) {
-        //},
-        uninstall: function (callback) {
-        }
-        //objectChange: function (id, obj) {
-        //}
-    }
+    { name: 'wifilight' }
 );
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -42,7 +31,6 @@ function onMessage (obj) {
     if (!obj) return;
     switch (obj.command) {
         case 'discovery':
-            //discovery.scanForDevices(
             discovery.scanForAllDevices(
                 function(entry) {
                     var ret = !adapter.config.devices.some(function(e,i) {
@@ -218,7 +206,6 @@ WifiLight.prototype.onStateChange = function (channel, stateName, val) {
     this.clearQueue();
     switch (stateName) {
         case usedStateNames.transition.n:
-            //this.dev.setAndUpdate(usedStateNames.transition.n, val);
             this.dev.updateVal(usedStateNames.transition.n, val);
             break;
         case 'onTime':
@@ -670,7 +657,6 @@ WifiLight.prototype.bri = function (channel, bri, transitionTime) {
 };
 //WifiLight.prototype.brightness = WifiLight.prototype.bri;
 
-
 WifiLight.prototype.onTime = function (channel, val) {
     if (this.onTimerObject) {
         clearTimeout(this.onTimerObject);
@@ -868,11 +854,6 @@ function checkDeletedDevices(cb) {
         toDelete.forEachCallback(cb, function(id, next) {
             dcs.del(id, next);
         });
-    
-        // if (toDelete.length <= 0) return cb && cb();
-        // toDelete.forEach(function(id, idx) {
-        //     dcs.del(obj._id, idx===toDelete.length-1 ? cb : undefined);
-        // });
     });
 }
 
