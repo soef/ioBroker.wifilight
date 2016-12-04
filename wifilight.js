@@ -306,6 +306,7 @@ WifiLight.prototype.onStateChange = function (channel, stateName, val) {
     }
 };
 
+
 WifiLight.prototype.reconnect = function (cb, timeout) {
     if (cb && typeof cb != 'function') {
         timeout = cb;
@@ -483,7 +484,7 @@ WifiLight.prototype.write = function(channel, cmd, cb) {
     //var s = buf.inspect();
     //this.log('writing: ' + buf.toString('hex').match(/.{2}/g).join(' '));
     this.log('write: ' + hex(buf));
-    if (!this.isOnline) {
+    if (!this.isOnline /*&& !this.USE_SOCKET_ONCE*/) {
         this.reconnect(function() {
             this._write(buf, cb);
         }.bind(this), 0);
@@ -736,6 +737,7 @@ var MiLight = function MiLight (config, zone, cb) {
     this.cmds.setZone(this.zone);
     this.states = { on: 0, red: 0, green: 0, blue: 0, white: 0 };
     this.writeTimer = soef.Timer();
+    this.isOnline = 'on demand';
 };
 
 MiLight.prototype = new WifiLight;
@@ -747,7 +749,6 @@ MiLight.prototype._write = function writeUdp (data, cb) {
     //??this.writeTimer.clear();
     if (!this.client) {
         var dgram = require('dgram');
-        //self.config.ip = '255.255.255.255';
         self.client = dgram.createSocket('udp4');
         //self.client = dgram.createSocket({ type: 'udp4', reuseAddr: true });
         self.client.on("listening", function (error) {
@@ -879,8 +880,8 @@ function main() {
                 new MiLight(adapter.config.devices[i], zone).run(function() {
                 });
             }
-        }
-        else new WifiLight(adapter.config.devices[i]).run(function() {
+        } else
+            new WifiLight(adapter.config.devices[i]).run(function() {
         });
     }
     devices.update();
