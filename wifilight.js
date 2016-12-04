@@ -133,7 +133,7 @@ function onStateChange(id, state) {
     }
     var stateName = ar[3];
     var device = wifi[deviceName];
-    if (device == undefined) return;
+    if (device == undefined || !device.isOnline) return;
     if (device.cmds.decodeResponse) devices.invalidate(id);
     device.onStateChange(channelName, stateName, state.val);
 }
@@ -145,10 +145,11 @@ var WifiLight = function (config, zone, cb) {
         return new WifiLight(config, zone, cb);
     }
     if (!config) return this;
-    this.USE_SOCKET_ONCE = false; //true;
+    //this.USE_SOCKET_ONCE = false; //true;
     this.config = config;
     this.isOnline = false;
     this.cmds = cmds[config.type];
+    this.prgTimer = soef.Timer();
 };
 
 WifiLight.prototype.run = function (cb) {
@@ -188,12 +189,12 @@ WifiLight.prototype.createDevice = function (cb) {
     if (this.zone !== undefined) {
         this.dev.setChannel(this.zone.toString(), ['All Zones', 'Zone 1', 'Zone 2', 'Zone 3', 'Zone 4'][this.zone]);
     }
-    var _g = this.cmds.g || 1;
+    wifi[this.dev.getFullId()] = this;
     for (var j in usedStateNames) {
         if (j == 'white' && this.cmds.rgbw == undefined) continue;
         var st = Object.assign({}, usedStateNames[j]);
         if ((j === 'progNo' || j==='disco') && this.cmds.programNames) st.common.states = this.cmds.programNames;
-        if (st.g & _g) {
+        if (st.g & this.cmds.g) {
             this.dev.createNew(st.n, st);
         }
     }
@@ -266,12 +267,18 @@ WifiLight.prototype.onStateChange = function (channel, stateName, val) {
             this.addToQueue(channel, val ? this.cmds.progOn : this.cmds.progOff);
             break;
         case usedStateNames.command.n:
+            // var v = val.replace(/(^on$|red|green|blue|transition|bri|off)/g, function(match, p) { return { '#': '#', off:'off:1', on:'on:1', red:'r', green:'g', blue:'b', white: 'w', transition:'x', bri:'l'/*, off:'on:0'*/} [match] });
+            // v = v.replace(/\s|\"|;$|,$/g, '').replace(/=/g, ':').replace(/;/g, ',').replace(/true/g, 1).replace(/((on|off),{1})/g, '$2:1,').replace(/#((\d|[a-f]|[A-F]|[.])*)/g, 'h:"$1"').replace(/(r|g|b|w|x|l|sat|off|on|ct|h)/g, '"$1"').replace(/^\{?(.*?)\}?$/, '{$1}');
             var v = val.replace(/(^on$|red|green|blue|transition|bri|off)/g, function(match, p) { return { '#': '#', off:'off:1', on:'on:1', red:'r', green:'g', blue:'b', white: 'w', transition:'x', bri:'l'/*, off:'on:0'*/} [match] });
-            v = v.replace(/\s|\"|;$|,$/g, '').replace(/=/g, ':').replace(/;/g, ',').replace(/true/g, 1).replace(/((on|off),{1})/g, '$2:1,').replace(/#((\d|[a-f]|[A-F]|[.])*)/g, 'h:"$1"').replace(/(r|g|b|w|x|l|sat|off|on|ct|h)/g, '"$1"').replace(/^\{?(.*?)\}?$/, '{$1}');
+            v = v.replace(/\s|\"|;$|,$/g, '').replace(/=/g, ':').replace(/;/g, ',').replace(/true/g, 1).replace(/((on|off),{1})/g, '$2:1,').replace(/#((\d|[a-f]|[A-F]|[.])*)/g, 'h:"$1"').replace(/(r|g|b|w|x|l|sat|off|on|ct|h|p)/g, '"$1"').replace(/^\{?(.*?)\}?$/, '{$1}');
             try {
                 var colors = JSON.parse(v);
             } catch (e) {
                 adapter.log.error("on Command: " + e.message + ': state.val="' + val + '"');
+                return;
+            }
+            if (colors.p) {
+                setTimeout(this.runJsonProgram.bind(this), 10, channel, colors.p);
                 return;
             }
             if (colors.h) {
@@ -306,6 +313,22 @@ WifiLight.prototype.onStateChange = function (channel, stateName, val) {
     }
 };
 
+WifiLight.prototype.runJsonProgram =  function (channel, cmds) {
+    var i = -1, self = this;
+    var delay = 30;
+    this.prgTimer.clear();
+    
+    function doIt() {
+        self.clearQueue();
+        if (++i >= cmds.length) i = 0;
+        var delay = Math.abs(cmds[i].x);
+        self.fade(channel, cmds[i], delay);
+        if (cmds[i].x < 0) return;
+        self.prgTimer.set(doIt, 10 + delay * 100);
+    }
+    if (cmds.length > 0) doIt();
+};
+
 
 WifiLight.prototype.reconnect = function (cb, timeout) {
     if (cb && typeof cb != 'function') {
@@ -325,7 +348,7 @@ WifiLight.prototype._write = function(data, cb) {
 WifiLight.prototype.start = function (cb) {
     
     if (this.USE_SOCKET_ONCE) {
-        wifi[this.dev.getFullId()] = this;
+        //wifi[this.dev.getFullId()] = this;
         //this._write = this.cmds.udp ? this.writeUdp : this.writeOnce;
         if (this.__proto__._write === WifiLight.prototype._write) {
             WifiLight.prototype._write = this.writeOnce;
@@ -349,7 +372,7 @@ WifiLight.prototype.start = function (cb) {
     });
     self.client.on('error', function(error) {
         var ts = debug ? '(' + parseInt((new Date().getTime() - self.ts) / 1000) + ' sec) ' : "";
-        self.log('onError: ' + ts + (error.code != undefined ? error.code : "") + error.message);
+        self.log('onError: ' + ts + (error.code != undefined ? error.code : "") + ' ' + error.message);
         switch (error.errno) { //error.code
             case 'ECONNRESET':
             case 'ETIMEDOUT':
@@ -360,7 +383,7 @@ WifiLight.prototype.start = function (cb) {
         self.setOnline(false);
     });
     self.client.connect(self.config.port, self.config.ip, function() {
-        wifi[self.dev.getFullId()] = self;
+        //wifi[self.dev.getFullId()] = self;
         self.log(self.config.ip + ' connected');
         self.setOnline(true);
         self.runUpdateTimer();
@@ -423,14 +446,8 @@ WifiLight.prototype.lock = function () {
 };
 
 WifiLight.prototype.close = function() {
-    if (this.client) {
-        this.client.destroy();
-        this.client = null;
-    }
-    if (this.updateTimer) {
-        clearTimeout(this.updateTimer);
-        this.updateTimer = null;
-    }
+    this.clearQueue();
+    this.destroyClient();
     if (this.writeTimeout) {
         clearTimeout(this.writeTimeout);
         this.writeTimeout = null;
@@ -439,6 +456,7 @@ WifiLight.prototype.close = function() {
         clearTimeout(this.onTimerObject);
         this.onTimerObject = null;
     }
+    this.prgTimer.clear();
 };
 
 WifiLight.prototype.runUpdateTimer = function () {
@@ -450,11 +468,12 @@ WifiLight.prototype.runUpdateTimer = function () {
 };
 
 WifiLight.prototype.setOnline = function (val) {
+    this.isOnline = val;
     if ((this.cmds.g & usedStateNames.online.g) === 0) return;
     this.dev.set(usedStateNames.online.n, val);
     //this.dev.update();
     devices.update();
-    this.isOnline = val;
+    //this.isOnline = val;
 };
 
 WifiLight.prototype.directRefresh = function(channel) {
@@ -606,6 +625,9 @@ WifiLight.prototype.fade = function (channel, rgbw, transitionTime) {
     var dif= { r: rgbw.r - co.r, g: rgbw.g - co.g, b: rgbw.b - co.b};
     dif.w = (rgbw.w != undefined && co.w != undefined) ? rgbw.w - co.w : 0;
     var maxSteps = Math.max(Math.abs(dif.r), Math.abs(dif.g), Math.abs(dif.b), Math.abs(dif.w), 1);
+    
+    maxSteps = Math.min ((transitionTime*100) / this.cmds.delay, maxSteps);
+    
     dif.r /= maxSteps;
     dif.g /= maxSteps;
     dif.b /= maxSteps;
@@ -795,16 +817,6 @@ MiLight.prototype.color = function (channel, rgbw, opt) {
     this.addToQueue(channel, this.cmds._color(color));
     this.addToQueue(channel, this.cmds._bri(hsv.v));
 };
-
-// WifiLight.prototype.ct = function (channel, temp, transitionTime) {
-//     var co = ct2rgb(temp);
-//     var hsv = rgb2hsv(co);
-//     //hsv.v = this.get(channel, 'bri').val;
-//     var v = this.get(channel, 'bri').val;
-//     if (v) hsv.v = v;
-//     co = hsv2rgb(hsv);
-//     this.fade(channel, co, transitionTime);
-// };
 
 MiLight.prototype.pair = function pair() {
     for (var i=0; i<3; i++) {
