@@ -317,16 +317,22 @@ WifiLight.prototype.runJsonProgram =  function (channel, cmds) {
     var i = -1, self = this;
     var delay = 30;
     this.prgTimer.clear();
+    this.refreshPaused = true; //this.refreshPaused === undefined ? 1 : this.refreshPaused + 1;
     
     function doIt() {
-        self.clearQueue();
+        //self.clearQueue();
         if (++i >= cmds.length) i = 0;
-        var delay = Math.abs(cmds[i].x);
-        self.fade(channel, cmds[i], delay);
-        if (cmds[i].x < 0) return;
+        var cmd = cmds[i];
+        var delay = Math.abs(cmd.x);
+        if (cmd.r !== undefined) {
+            self.fade(channel, cmd, delay);
+            self.states.red = cmd.r; self.states.green = cmd.g; self.states.blue = cmd.b;
+        }
+        if (cmd.x < 0) return;
         self.prgTimer.set(doIt, 10 + delay * 100);
     }
     if (cmds.length > 0) doIt();
+    else this.refreshPaused = 0;
 };
 
 
@@ -477,13 +483,13 @@ WifiLight.prototype.setOnline = function (val) {
 };
 
 WifiLight.prototype.directRefresh = function(channel) {
-    if (!this.cmds.statusRequest) return;
+    if (!this.cmds.statusRequest || this.refreshPaused) return;
     this.log('sending refresh...');
     this.write(channel, this.cmds.statusRequest);
 };
 
 WifiLight.prototype.refresh = function(channel, ctrl) {
-    if (!this.cmds.statusRequest) return;
+    if (!this.cmds.statusRequest || this.refreshPaused) return;
     this.addToQueue(channel, this.cmds.statusRequest, { ctrl: ctrl|true });
 };
 
