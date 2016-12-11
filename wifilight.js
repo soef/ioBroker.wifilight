@@ -135,6 +135,7 @@ function onStateChange(id, state) {
     var device = wifi[deviceName];
     if (device == undefined || !device.isOnline) return;
     if (device.cmds.decodeResponse) devices.invalidate(id);
+    device.stopRunningProgram();
     device.onStateChange(channelName, stateName, state.val);
 }
 
@@ -313,26 +314,41 @@ WifiLight.prototype.onStateChange = function (channel, stateName, val) {
     }
 };
 
+WifiLight.prototype.stopRunningProgram = function () {
+    this.prgTimer.clear();
+    this.refreshPaused = 0;
+    this.clearQueue();
+};
+
 WifiLight.prototype.runJsonProgram =  function (channel, cmds) {
     var i = -1, self = this;
     var delay = 30;
+    var lastCo = { red: self.states.red, green: self.states.green, blue: self.states.blue};
     this.prgTimer.clear();
-    this.refreshPaused = true; //this.refreshPaused === undefined ? 1 : this.refreshPaused + 1;
+    self.clearQueue();
     
     function doIt() {
-        //self.clearQueue();
+        if (self.queue.length > 0) {
+            setTimeout(doIt, self.queue.length*2);
+            return;
+        }
         if (++i >= cmds.length) i = 0;
         var cmd = cmds[i];
+        if (cmd.x === undefined) cmd.x = 0;
         var delay = Math.abs(cmd.x);
         if (cmd.r !== undefined) {
+            Object.assign(self.states, lastCo);
             self.fade(channel, cmd, delay);
-            self.states.red = cmd.r; self.states.green = cmd.g; self.states.blue = cmd.b;
+            lastCo.red = cmd.r; lastCo.green = cmd.g; lastCo.blue = cmd.b;
         }
         if (cmd.x < 0) return;
-        self.prgTimer.set(doIt, 10 + delay * 100);
+        self.prgTimer.set(doIt, 10 + delay * 10);
     }
-    if (cmds.length > 0) doIt();
-    else this.refreshPaused = 0;
+    if (cmds.length > 0) {
+        this.refreshPaused = true;
+        doIt();
+    }
+    else this.stopRunningProgram();
 };
 
 
@@ -906,5 +922,6 @@ function main() {
     adapter.subscribeStates('*');
     adapter.subscribeObjects('*');
 }
+
 
 

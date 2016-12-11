@@ -41,8 +41,10 @@ const programNames = {
 exports.knownDeviceNames = {
     'HF-LPB100-ZJ200': { type: 'LD382A' /*, port: 5577*/ },
     'HF-A11-ZJ002':    { type: 'LW12' },
-    'Mi-Light':        { type: 'MiLight', port: 8899 }
+    'Mi-Light':        { type: 'MiLight', port: 8899 },
+    'AK001-ZJ100':     { type: 'LD382A' /*, magichome port: 5577*/ }
 };
+
 
 exports.LW12 = {
     useCheckSum: false,

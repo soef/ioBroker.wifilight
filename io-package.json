@@ -1,7 +1,7 @@
 {
   "common": {
     "name": "wifilight",
-    "version": "0.0.28",
+    "version": "0.0.32",
     "title": "WiFi Light",
     "desc": {
       "en": "WiFi Light Devices",
