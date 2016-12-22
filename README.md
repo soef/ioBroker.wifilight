@@ -1,6 +1,14 @@
 ![Logo](admin/wifilight.png)
 
 #### ioBroker.wifilight 
+
+[![NPM version](http://img.shields.io/npm/v/iobroker.wifilight.svg)](https://www.npmjs.com/package/iobroker.wifilight)
+[![Tests](http://img.shields.io/travis/soef/ioBroker.wifilight/master.svg)](https://travis-ci.org/soef/ioBroker.wifilight)
+[![Build status](https://ci.appveyor.com/api/projects/status/2hvs4fvfms7xhmnw?svg=true)](https://ci.appveyor.com/project/soef/iobroker-wifilight)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg?style=flat)](https://github.com/soef/iobroker.wifilight/blob/master/LICENSE)
+
+#### Description
+
 ioBroker Adapter for WiFi Light
 
 #### Info
@@ -36,6 +44,7 @@ Execute the following command in the iobroker root directory (e.g. in /opt/iobro
 ```
 npm install iobroker.wifilight 
 ```
+<!--
 ### License
 The MIT License (MIT)
 
@@ -58,3 +67,4 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
+-->
