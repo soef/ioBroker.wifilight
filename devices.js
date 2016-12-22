@@ -40,6 +40,7 @@ const programNames = {
 
 exports.knownDeviceNames = {
     'HF-LPB100-ZJ200': { type: 'LD382A' /*, port: 5577*/ },
+    'HF-LPB100-ZJ002': { type: 'LD382' },
     'HF-A11-ZJ002':    { type: 'LW12' },
     'Mi-Light':        { type: 'MiLight', port: 8899 },
     'AK001-ZJ100':     { type: 'LD382A' /*, magichome port: 5577*/ }
@@ -118,6 +119,17 @@ exports.LD382A = {
 exports.LD382 = Object.assign(exports.LD382A, { // not tested
 });
 
+exports.UFO = Object.assign(exports.LD382A, { // not tested
+    on: [0x71, 0x23],
+    off: [0x71, 0x24],
+    rgb: [0x31, VARS.red, VARS.green, VARS.blue, 0x00, 0x00, 0x00],
+    rgbw: undefined,
+    progOn: [0x71, 0x21],
+    progOff: [0x71, 0x20],
+    progNo: [0x61, VARS.prog, VARS.speed],
+    statusRequest: [0x81, 0x8A, 0x8B],
+    
+});
 
 //LimitlessLED
 exports.MiLight = {

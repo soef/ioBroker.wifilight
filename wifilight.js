@@ -720,7 +720,11 @@ WifiLight.prototype.onTime = function (channel, val) {
 };
 
 WifiLight.prototype.onData = function (data) {
-
+    
+    if (adapter.common.loglevel == 'debug') {
+        adapter.log.debug('raw data length: ' + data.length);
+        adapter.log.debug('raw data: ' + hex(data));
+    }
     var newPos = this.dataBuffer.pos + data.length;
     if (newPos > this.dataBuffer.length) {
         var b = new Uint8Array(newPos + 200);
@@ -879,7 +883,7 @@ function checkDeletedDevices(cb) {
         res.forEach(function(obj) {
             var ar = obj._id.split('.');
             var ip = ar[2].replace(reIp, '.');
-            var found = adapter.config.devices.find(function(v) {
+            var found = adapter.config.devices.find(function(v) {    //xxxx
                 return v.ip === ip;
             });
             if (!found) {
