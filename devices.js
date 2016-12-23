@@ -123,7 +123,7 @@ exports.UFO = Object.assign(exports.LD382A, { // not tested
     on: [0x71, 0x23],
     off: [0x71, 0x24],
     rgb: [0x31, VARS.red, VARS.green, VARS.blue, 0x00, 0x00, 0x00],
-    rgbw: undefined,
+    rgbw: [0x31, VARS.red, VARS.green, VARS.blue, VARS.white, 0x00],
     progOn: [0x71, 0x21],
     progOff: [0x71, 0x20],
     progNo: [0x61, VARS.prog, VARS.speed],
