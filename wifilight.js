@@ -174,7 +174,8 @@ WifiLight.prototype.run = function (cb) {
         this.dataBuffer = new Uint8Array(200);
         //this.dataBuffer = new Buffer(200);
         this.dataBuffer.pos = 0;
-        this.states = { red: this.get('r'), green: this.get('g'), blue: this.get('b') };
+        //this.states = { red: this.getval('r',0), green: this.getval('g', 0), blue: this.getval('b',0) };
+        this.states = { red: 0, green: 0, blue: 0 };
         this.start(cb);
     }.bind(this));
     return this;
@@ -204,11 +205,11 @@ WifiLight.prototype.createDevice = function (cb) {
 
 WifiLight.prototype.onStateChange = function (channel, stateName, val) {
 
-    var transitionTime = this.get(channel, usedStateNames.transition.n) || {val:0}.val || 0;
+    var transitionTime = this.getval(channel, usedStateNames.transition.n, 0);
     this.clearQueue();
     switch (stateName) {
         case usedStateNames.transition.n:
-            this.dev.updateVal(usedStateNames.transition.n, val);
+            this.dev.setraw(usedStateNames.transition.n, val);
             break;
         case 'onTime':
             this.onTime(channel, val);
@@ -904,8 +905,13 @@ function normalizeConfigDevice(dev) {
     dev.port = parseInt(dev.port) || 5577;
 }
 
+
+//var capn = require(__dirname + '/capn');
+
+
 function main() {
 
+    //var ln = capn.line;
     if (!adapter.config.devices) return;
     checkDeletedDevices(function(err) {
         // \/
