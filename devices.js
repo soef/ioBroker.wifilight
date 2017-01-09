@@ -281,7 +281,7 @@ exports.MiLightRGB = Object.assign (exports.MiLight, {
     _bri: function(percent) {
         var bri = Math.floor(2 + (((percent||0) / 100) * this.dimSteps));
         var cmd = [].concat(this.on);
-        for (i=0; i<bri; i++) {
+        for (var i=0; i<bri; i++) {
             cmd.push(this.briUp);
         }
     },
