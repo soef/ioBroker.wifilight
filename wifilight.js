@@ -891,9 +891,10 @@ function checkDeletedDevices(cb) {
                 toDelete.push(obj._id);
             }
         });
-        toDelete.forEachCallback(cb, function(id, next) {
+        toDelete.forEachCallback(function(id, next) {
             dcs.del(id, next);
-        });
+        }, 
+		cb);
     });
 }
 
