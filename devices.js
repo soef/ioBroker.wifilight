@@ -116,10 +116,10 @@ exports.LD382A = {
     }
 };
 
-exports.LD382 = Object.assign(exports.LD382A, { // not tested
+exports.LD382 = Object.assign({}, exports.LD382A, { // not tested
 });
 
-exports.UFO = Object.assign(exports.LD382A, { // not tested
+exports.UFO = Object.assign({}, exports.LD382A, { // not tested
     on: [0x71, 0x23],
     off: [0x71, 0x24],
     rgb: [0x31, VARS.red, VARS.green, VARS.blue, 0x00, 0x00, 0x00],
@@ -263,7 +263,7 @@ exports.MiLight = {
     }
 };
 
-exports.MiLightRGB = Object.assign (exports.MiLight, {
+exports.MiLightRGB = Object.assign ({}, exports.MiLight, {
     g: 2,
     dimSteps: 9,
     colorSteps: 255,
@@ -284,11 +284,11 @@ exports.MiLightRGB = Object.assign (exports.MiLight, {
         for (var i=0; i<bri; i++) {
             cmd.push(this.briUp);
         }
-    },
+    }
 });
 
-exports.MiLightW = Object.assign (exports.MiLight, {
+exports.MiLightW = Object.assign ({}, exports.MiLight, {
     g: 2,
     dimSteps: 11,
-    colorSteps: 11,
+    colorSteps: 11
 });
