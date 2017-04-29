@@ -891,7 +891,7 @@ function checkDeletedDevices(cb) {
                 toDelete.push(obj._id);
             }
         });
-        toDelete.forEachCallback(function(id, next) {
+        toDelete.forEachCallback(function(next, id) {
             dcs.del(id, next);
         }, 
 		cb);
@@ -900,26 +900,40 @@ function checkDeletedDevices(cb) {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-function normalizeConfigDevice(dev) {
-    dev.pollIntervall = parseInt(dev.pollIntervall) | 0;
-    if (dev.pollIntervall && dev.pollIntervall < 5) dev.pollIntervall = 5;
-    dev.port = parseInt(dev.port) || 5577;
+function normalizeConfig (config) {
+    
+    var changed = false;
+    config.devices.forEach(function (d, i) {
+        var old = Object.assign({}, d);
+        var dev = cmds.knownDeviceNames[d.name];
+        
+        d.pollIntervall = parseInt(dev.pollIntervall) | 0;
+        if (d.pollIntervall && d.pollIntervall < 5) d.pollIntervall = 5;
+        d.port = parseInt(d.port) || 5577;
+        
+        if (d.type === undefined) d.type = dev ? dev.type : '';
+        if (d.port === undefined) d.port = dev && dev.port ? dev.port : 5577;
+        if (d.pollIntervall === undefined) d.pollIntervall = 30;
+        Object.keys(d).forEach(function(key) {
+            changed = changed || d[key] !== old[key];
+        });
+    });
+    if (changed) {
+        soef.changeAdapterConfig (adapter, function(conf) {
+            conf.devices = config.devices;
+        });
+    }
 }
-
-
-//var capn = require(__dirname + '/capn');
 
 
 function main() {
 
-    //var ln = capn.line;
     if (!adapter.config.devices) return;
     checkDeletedDevices(function(err) {
         // \/
     });
+    normalizeConfig(adapter.config);
     for (var i=0; i<adapter.config.devices.length; i++) {
-        normalizeConfigDevice(adapter.config.devices[i]);
-        
         if (adapter.config.devices[i].type === 'MiLight') {
             for (var zone=0; zone<=4; zone++) {
                 new MiLight(adapter.config.devices[i], zone).run(function() {
