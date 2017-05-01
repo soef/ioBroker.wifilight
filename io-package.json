@@ -1,15 +1,19 @@
 {
   "common": {
     "name": "wifilight",
-    "version": "0.1.3",
+    "version": "0.1.4",
     "news": {
+      "0.1.4": {
+        "en": "Misplaced komma in io-package.json",
+        "de": "Falsche Komma in io-package.json"
+      },
       "0.1.3": {
         "en": "Normalize devices for devices added by discovery",
         "de": "Daten-Normalisierung der von Discovery hinzugefügten Geräte"
       },
       "0.1.2": {
         "en": "possible exception when deleting unused devices",
-        "de": "Möglicher Ausnahmefehler beim Löschen unbenutzter Geräte",
+        "de": "Möglicher Ausnahmefehler beim Löschen unbenutzter Geräte"
       }
     },
     "title": "WiFi Light",
