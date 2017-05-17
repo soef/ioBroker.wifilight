@@ -59,6 +59,8 @@ function onMessage (obj) {
     return true;
 }
 
+
+
 function onUnload(callback) {
     Object.keys(wifi).forEach(function(v) {
         wifi[v].close();
@@ -904,8 +906,13 @@ function normalizeConfig (config) {
     
     var changed = false;
     config.devices.forEach(function (d, i) {
-        var old = Object.assign({}, d);
-        var dev = cmds.knownDeviceNames[d.name];
+        var dev, old = Object.assign({}, d);
+        if (!(dev = cmds.knownDeviceNames[d.name])) {
+            var err = "config.device " + d.name + ' is not a known device. Skipping this device!';
+            err += '\nKnown names are: ' + Object.keys(cmds.knownDeviceNames).join(', ');
+            adapter.log.error(err);
+            return;
+        }
         
         d.pollIntervall = parseInt(dev.pollIntervall) | 0;
         if (d.pollIntervall && d.pollIntervall < 5) d.pollIntervall = 5;
@@ -925,9 +932,12 @@ function normalizeConfig (config) {
     }
 }
 
-
 function main() {
-
+    
+    
+    //onMessage({command: 'discovery'});
+    //return;
+    
     if (!adapter.config.devices) return;
     checkDeletedDevices(function(err) {
         // \/
