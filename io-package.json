@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "wifilight",
-    "version": "0.1.4",
+    "version": "0.1.5",
     "news": {
+      "0.1.5": {
+        "en": "Possible exception, if wrong device name configured, fixed. Reason is added to the error log.",
+        "de": "Mögliche Schutzverletzung, wenn falscher Geräte Name/Type angegeben, behoben, Grund steht im error log."
+      },
       "0.1.4": {
         "en": "Misplaced komma in io-package.json",
         "de": "Falsche Komma in io-package.json"
