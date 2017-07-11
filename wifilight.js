@@ -195,7 +195,7 @@ WifiLight.prototype.createDevice = function (cb) {
     }
     wifi[this.dev.getFullId()] = this;
     for (var j in usedStateNames) {
-        if (j == 'white' && this.cmds.rgbw == undefined) continue;
+        if (j === 'white' && this.cmds.rgbw === undefined) continue;
         var st = Object.assign({}, usedStateNames[j]);
         if ((j === 'progNo' || j==='disco') && this.cmds.programNames) st.common.states = this.cmds.programNames;
         if (st.g & this.cmds.g) {
@@ -217,7 +217,7 @@ WifiLight.prototype.onStateChange = function (channel, stateName, val) {
             this.onTime(channel, val);
             break;
         case 'on':
-            this.on_off(channel, val >> 0 ? true : false);
+            this.on_off(channel, !!(val >> 0));
             break;
         case 'rgbw':
         case 'rgb':
@@ -230,7 +230,7 @@ WifiLight.prototype.onStateChange = function (channel, stateName, val) {
         case 'w':
         case 'sat':
             var co;
-            if (typeof val == 'string' && val[0] == '#') {
+            if (typeof val === 'string' && val[0] === '#') {
                 co = parseHexColors(val);
             } else {
                 co = this.getRGBStates(channel);
@@ -254,15 +254,16 @@ WifiLight.prototype.onStateChange = function (channel, stateName, val) {
             this.addToQueue(channel, this.cmds.progNo, progNo, val);
             break;
         case usedStateNames.progNo.n:
-            if (typeof val == 'string') {
+            var speed;
+            if (typeof val === 'string') {
                 var ar = val.split(' ');
                 if (!ar || ar.lengt < 2) ar = val.split(',');
                 if (ar && ar.length >= 2) {
-                    var speed = parseInt(ar[1]);
+                    speed = parseInt(ar[1]);
                     val = parseInt(ar[0]);
                 }
             } else {
-                var speed = this.getval(channel, usedStateNames.progSpeed.n, 30);
+                speed = this.getval(channel, usedStateNames.progSpeed.n, 30);
             }
             //if (this.cmds._setProgNo) _setProgNo(this, channel, val >> 0); else
             this.addToQueue(channel, this.cmds.progNo, val >> 0, speed);
@@ -291,8 +292,8 @@ WifiLight.prototype.onStateChange = function (channel, stateName, val) {
             }
             if (!colors || typeof colors !== 'object') return;
             if(colors.off !== undefined) {
-                this.color(channel, {r:0, g:0, b:0, w: colors.w != undefined ? 0 : undefined});
-                this.states.red = 0; this.states.green = 0; this.states.blue = 0; if (this.states.white != undefined) this.states.white = 0;
+                this.color(channel, {r:0, g:0, b:0, w: colors.w !== undefined ? 0 : undefined});
+                this.states.red = 0; this.states.green = 0; this.states.blue = 0; if (this.states.white !== undefined) this.states.white = 0;
             }
             var o = fullExtend(this.getRGBStates(channel), colors);
             adapter.log.debug(JSON.stringify(o));
@@ -300,7 +301,7 @@ WifiLight.prototype.onStateChange = function (channel, stateName, val) {
                 transitionTime = o.x >> 0;
             }
             if (o['on'] !== undefined) {
-                this.on_off(channel, o.on >> 0 ? true : false);
+                this.on_off(channel, !!(o.on >> 0));
             }
             if (colors.r!==undefined || colors.g!==undefined || colors.b!==undefined || colors.w!==undefined || colors.sat!==undefined) {
                 this.fade(channel, o, transitionTime);
@@ -914,7 +915,7 @@ function normalizeConfig (config) {
             return;
         }
         
-        d.pollIntervall = parseInt(dev.pollIntervall) | 0;
+        d.pollIntervall = parseInt(d.pollIntervall) | 0;
         if (d.pollIntervall && d.pollIntervall < 5) d.pollIntervall = 5;
         d.port = parseInt(d.port) || 5577;
         
@@ -933,11 +934,8 @@ function normalizeConfig (config) {
 }
 
 function main() {
-    
-    
     //onMessage({command: 'discovery'});
     //return;
-    
     if (!adapter.config.devices) return;
     checkDeletedDevices(function(err) {
         // \/

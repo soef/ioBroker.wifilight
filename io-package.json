@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "wifilight",
-    "version": "0.1.5",
+    "version": "0.1.6",
     "news": {
+      "0.1.6": {
+        "en": "fixed typo. Caused an object change which caused an adapter restart",
+        "de": "Tippfehler korrigiert. Führte zu einer Object-Änderung die wiederum zum Adapterneustart führte"
+      },
       "0.1.5": {
         "en": "Possible exception, if wrong device name configured, fixed. Reason is added to the error log.",
         "de": "Mögliche Schutzverletzung, wenn falscher Geräte Name/Type angegeben, behoben, Grund steht im error log."
