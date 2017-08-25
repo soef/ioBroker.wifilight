@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "wifilight",
-    "version": "0.1.6",
+    "version": "0.1.7",
     "news": {
+      "0.1.7": {
+        "en": "Enhance CI testing",
+        "de": "CI testing erweitert"
+      },
       "0.1.6": {
         "en": "fixed typo. Caused an object change which caused an adapter restart",
         "de": "Tippfehler korrigiert. Führte zu einer Object-Änderung die wiederum zum Adapterneustart führte"
