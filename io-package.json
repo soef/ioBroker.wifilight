@@ -1,8 +1,12 @@
 {
   "common": {
     "name": "wifilight",
-    "version": "0.1.7",
+    "version": "0.1.8",
     "news": {
+      "0.1.8": {
+        "en": "node 0.12 removed from testing",
+        "de": "node 0.12 auf testing entfernt"
+      },
       "0.1.7": {
         "en": "Enhance CI testing",
         "de": "CI testing erweitert"
