@@ -1,64 +1,68 @@
 {
-  "common": {
-    "name": "wifilight",
-    "version": "0.1.8",
-    "news": {
-      "0.1.8": {
-        "en": "node 0.12 removed from testing",
-        "de": "node 0.12 auf testing entfernt"
-      },
-      "0.1.7": {
-        "en": "Enhance CI testing",
-        "de": "CI testing erweitert"
-      },
-      "0.1.6": {
-        "en": "fixed typo. Caused an object change which caused an adapter restart",
-        "de": "Tippfehler korrigiert. Führte zu einer Object-Änderung die wiederum zum Adapterneustart führte"
-      },
-      "0.1.5": {
-        "en": "Possible exception, if wrong device name configured, fixed. Reason is added to the error log.",
-        "de": "Mögliche Schutzverletzung, wenn falscher Geräte Name/Type angegeben, behoben, Grund steht im error log."
-      },
-      "0.1.4": {
-        "en": "Misplaced komma in io-package.json",
-        "de": "Falsche Komma in io-package.json"
-      },
-      "0.1.3": {
-        "en": "Normalize devices for devices added by discovery",
-        "de": "Daten-Normalisierung der von Discovery hinzugefügten Geräte"
-      },
-      "0.1.2": {
-        "en": "possible exception when deleting unused devices",
-        "de": "Möglicher Ausnahmefehler beim Löschen unbenutzter Geräte"
-      }
+    "common": {
+        "name": "wifilight",
+        "version": "0.1.8",
+        "news": {
+            "0.1.8": {
+                "en": "node 0.12 removed from testing",
+                "de": "node 0.12 auf testing entfernt"
+            },
+            "0.1.7": {
+                "en": "Enhance CI testing",
+                "de": "CI testing erweitert"
+            },
+            "0.1.6": {
+                "en": "fixed typo. Caused an object change which caused an adapter restart",
+                "de": "Tippfehler korrigiert. Führte zu einer Object-Änderung die wiederum zum Adapterneustart führte"
+            },
+            "0.1.5": {
+                "en": "Possible exception, if wrong device name configured, fixed. Reason is added to the error log.",
+                "de": "Mögliche Schutzverletzung, wenn falscher Geräte Name/Type angegeben, behoben, Grund steht im error log."
+            },
+            "0.1.4": {
+                "en": "Misplaced komma in io-package.json",
+                "de": "Falsche Komma in io-package.json"
+            },
+            "0.1.3": {
+                "en": "Normalize devices for devices added by discovery",
+                "de": "Daten-Normalisierung der von Discovery hinzugefügten Geräte"
+            },
+            "0.1.2": {
+                "en": "possible exception when deleting unused devices",
+                "de": "Möglicher Ausnahmefehler beim Löschen unbenutzter Geräte"
+            }
+        },
+        "title": "WiFi Light",
+        "desc": {
+            "en": "WiFi Light Devices",
+            "de": "WiFi Light Devices",
+            "ru": "WiFi Light Devices"
+        },
+        "keywords": [
+            "ioBroker",
+            "wifilight",
+            "lw12",
+            "ld382"
+        ],
+        "platform": "Javascript/Node.js",
+        "mode": "daemon",
+        "icon": "wifilight.png",
+        "extIcon": "https://raw.githubusercontent.com/soef/iobroker.wifilight/master/admin/wifilight.png",
+        "readme": "https://github.com/soef/iobroker.wifilight/blob/master/README.md",
+        "loglevel": "info",
+        "type": "lighting",
+        "messagebox": true,
+        "enabled": true,
+        "authors": [
+            {
+                "name": "soef",
+                "email": "soef@gmx.net"
+            }
+        ]
     },
-    "title": "WiFi Light",
-    "desc": {
-      "en": "WiFi Light Devices",
-      "de": "WiFi Light Devices",
-      "ru": "WiFi Light Devices"
+    "native": {
+        "devices": []
     },
-    "keywords": [
-      "ioBroker",
-      "wifilight",
-      "lw12",
-      "ld382"
-    ],
-    "platform": "Javascript/Node.js",
-    "mode": "daemon",
-    "icon": "wifilight.png",
-    "extIcon": "https://raw.githubusercontent.com/soef/iobroker.wifilight/master/admin/wifilight.png",
-    "readme": "https://github.com/soef/iobroker.wifilight/blob/master/README.md",
-    "loglevel": "info",
-    "type": "hardware",
-    "messagebox": true,
-    "enabled": true
-  },
-  "native": {
-    "devices": []
-  },
-  "instanceObjects": [
-  ],
-  "objects": [
-  ]
+    "instanceObjects": [],
+    "objects": []
 }
