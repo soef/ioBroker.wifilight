@@ -1,8 +1,12 @@
 {
     "common": {
         "name": "wifilight",
-        "version": "0.1.8",
+        "version": "0.1.9",
         "news": {
+            "0.1.9": {
+                "en": "update basic package-file testing (Apollon77)",
+                "de": "Erweiterung der Tests (Apollon77)"
+            },
             "0.1.8": {
                 "en": "node 0.12 removed from testing",
                 "de": "node 0.12 auf testing entfernt"
