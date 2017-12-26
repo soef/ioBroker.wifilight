@@ -1,8 +1,12 @@
 {
     "common": {
         "name": "wifilight",
-        "version": "0.1.9",
+        "version": "0.1.10",
         "news": {
+            "0.1.10": {
+                "en": "AK001-ZJ200 added (matze1708)",
+                "de": "AK001-ZJ200 hinzugefügt (matze1708)"
+            },
             "0.1.9": {
                 "en": "update basic package-file testing (Apollon77)",
                 "de": "Erweiterung der Tests (Apollon77)"
