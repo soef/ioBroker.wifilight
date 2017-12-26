@@ -1,6 +1,6 @@
 {
   "name": "iobroker.wifilight",
-  "version": "0.1.10",
+  "version": "0.2.0",
   "description": "WiFi Light Adapter",
   "author": {
     "name": "soef",
@@ -49,3 +49,4 @@
     "test": "node node_modules/mocha/bin/mocha"
   }
 }
+

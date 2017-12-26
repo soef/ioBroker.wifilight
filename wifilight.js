@@ -25,6 +25,10 @@ var adapter = soef.Adapter (
     { name: 'wifilight' }
 );
 
+function fromDeviceName(name) {
+    return cmds.knownDeviceNames[name] || cmds.knownDeviceNames[name.toUpperCase()];
+}
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 function onMessage (obj) {
@@ -34,10 +38,10 @@ function onMessage (obj) {
             discovery.scanForAllDevices(
                 function(entry) {
                     var ret = !adapter.config.devices.some(function(e,i) {
-                        return e.ip == entry.ip;
+                        return e.ip === entry.ip;
                     });
                     if (ret) {
-                        var dev = cmds.knownDeviceNames[entry.name];
+                        var dev = fromDeviceName(entry.name);
                         entry.type = dev ? dev.type : '';
                         entry.port = dev && dev.port ? dev.port : 5577;
                         entry.pollIntervall = 30;
@@ -148,7 +152,6 @@ var WifiLight = function (config, zone, cb) {
         return new WifiLight(config, zone, cb);
     }
     if (!config) return this;
-    //this.USE_SOCKET_ONCE = false; //true;
     this.config = config;
     this.isOnline = false;
     this.cmds = cmds[config.type];
@@ -161,12 +164,12 @@ WifiLight.prototype.run = function (cb) {
         if (cb) cb(-1);
         return null;
     }
-    if (this.cmds.vmax == undefined) this.cmds.vmax = 255;
+    if (this.cmds.vmax === undefined) this.cmds.vmax = 255;
     this.cmds.g = this.cmds.g || 1;
 
     this.createDevice(function(err) {
         this.setOnline(false);
-        
+
         if (this.cmds.onlyConnectOnWrite) {
             this.USE_SOCKET_ONCE = true;
             this.setOnline('on demand');
@@ -174,9 +177,7 @@ WifiLight.prototype.run = function (cb) {
         this.locked = 0;
         this.queue = [];
         this.dataBuffer = new Uint8Array(200);
-        //this.dataBuffer = new Buffer(200);
         this.dataBuffer.pos = 0;
-        //this.states = { red: this.getval('r',0), green: this.getval('g', 0), blue: this.getval('b',0) };
         this.states = { red: 0, green: 0, blue: 0 };
         this.start(cb);
     }.bind(this));
@@ -272,8 +273,6 @@ WifiLight.prototype.onStateChange = function (channel, stateName, val) {
             this.addToQueue(channel, val ? this.cmds.progOn : this.cmds.progOff);
             break;
         case usedStateNames.command.n:
-            // var v = val.replace(/(^on$|red|green|blue|transition|bri|off)/g, function(match, p) { return { '#': '#', off:'off:1', on:'on:1', red:'r', green:'g', blue:'b', white: 'w', transition:'x', bri:'l'/*, off:'on:0'*/} [match] });
-            // v = v.replace(/\s|\"|;$|,$/g, '').replace(/=/g, ':').replace(/;/g, ',').replace(/true/g, 1).replace(/((on|off),{1})/g, '$2:1,').replace(/#((\d|[a-f]|[A-F]|[.])*)/g, 'h:"$1"').replace(/(r|g|b|w|x|l|sat|off|on|ct|h)/g, '"$1"').replace(/^\{?(.*?)\}?$/, '{$1}');
             var v = val.replace(/(^on$|red|green|blue|transition|bri|off)/g, function(match, p) { return { '#': '#', off:'off:1', on:'on:1', red:'r', green:'g', blue:'b', white: 'w', transition:'x', bri:'l'/*, off:'on:0'*/} [match] });
             v = v.replace(/\s|\"|;$|,$/g, '').replace(/=/g, ':').replace(/;/g, ',').replace(/true/g, 1).replace(/((on|off),{1})/g, '$2:1,').replace(/#((\d|[a-f]|[A-F]|[.])*)/g, 'h:"$1"').replace(/(r|g|b|w|x|l|sat|off|on|ct|h|p)/g, '"$1"').replace(/^\{?(.*?)\}?$/, '{$1}');
             try {
@@ -330,7 +329,7 @@ WifiLight.prototype.runJsonProgram =  function (channel, cmds) {
     var lastCo = { red: self.states.red, green: self.states.green, blue: self.states.blue};
     this.prgTimer.clear();
     self.clearQueue();
-    
+
     function doIt() {
         if (self.queue.length > 0) {
             setTimeout(doIt, self.queue.length*2);
@@ -372,10 +371,8 @@ WifiLight.prototype._write = function(data, cb) {
 };
 
 WifiLight.prototype.start = function (cb) {
-    
+
     if (this.USE_SOCKET_ONCE) {
-        //wifi[this.dev.getFullId()] = this;
-        //this._write = this.cmds.udp ? this.writeUdp : this.writeOnce;
         if (this.__proto__._write === WifiLight.prototype._write) {
             WifiLight.prototype._write = this.writeOnce;
         }
@@ -409,7 +406,6 @@ WifiLight.prototype.start = function (cb) {
         self.setOnline(false);
     });
     self.client.connect(self.config.port, self.config.ip, function() {
-        //wifi[self.dev.getFullId()] = self;
         self.log(self.config.ip + ' connected');
         self.setOnline(true);
         self.runUpdateTimer();
@@ -436,9 +432,6 @@ WifiLight.prototype.writeOnce = function(data, cb) {
         return;
     }
     this.client = new net.Socket();
-    // this.client.setTimeout(5000, function () {
-    //     //this.log('self.client.setTimeout for ' + self.config.ip);
-    // });
 
     var self = this;
     this.client.on('data', function(data) {
@@ -497,9 +490,7 @@ WifiLight.prototype.setOnline = function (val) {
     this.isOnline = val;
     if ((this.cmds.g & usedStateNames.online.g) === 0) return;
     this.dev.set(usedStateNames.online.n, val);
-    //this.dev.update();
     devices.update();
-    //this.isOnline = val;
 };
 
 WifiLight.prototype.directRefresh = function(channel) {
@@ -557,7 +548,6 @@ WifiLight.prototype.addToQueue = function (varArgArray) {
 
     if (varArgs.length > idx+1) {
         for (var i = 0, j=idx+1; i < varArgs[idx].length; i++) {
-            //cmd[i] = varArgs[idx][i] < 0 && varArgs[idx][i] !== cmds.VARS.separator ? varArgs[j++] : varArgs[idx][i];
             cmd[i] = varArgs[idx][i] < 0 && varArgs[idx][i] !== cmds.VARS.separator && varArgs[idx][i] !== cmds.VARS.sepNoDelay ? varArgs[j++] : varArgs[idx][i];
         }
     } else {
@@ -567,7 +557,7 @@ WifiLight.prototype.addToQueue = function (varArgArray) {
     if (varArgs.length >= j && typeof varArgs[j] == 'object') {
         opt = varArgs[j];
     }
-    
+
     var _cmd = [];
     var last = cmd.length - 1;
     cmd.forEach(function(c, i) {
@@ -590,35 +580,22 @@ WifiLight.prototype.addToQueue = function (varArgArray) {
             _cmd = [];
         }
     }.bind(this));
-    // this.queue.push ({
-    //     cmd: cmd,
-    //     ctrl: opt && opt.ctrl ? true : false,
-    //     channel: channel,
-    //     delay: opt && opt.delay ? opt.delay : this.cmds.delay != undefined ? this.cmds.delay : 10,
-    //     ts: 0,
-    //     inProcess: 0,
-    //     unlock: 0
-    // });
     if (this.queue.length && this.queue[0].inProcess === 1) {
-        //this.log('addToQueue: return without calling exec');
         return;
     }
     this.exec();
 };
 
 WifiLight.prototype.exec = function () {
-    //this.log('exec: queue.length=' + this.queue.length + (this.queue.length ? ' inProcess=' + this.queue[0].inProcess : ""));
     var akt;
     while(true) {
         if (this.queue.length <= 0) {
-            //this.log('exec: returning queue.length=0');
             return;
         }
         akt = this.queue[0];
         if (!(akt.inProcess || (!akt.ctrl && akt.ts != 0 && akt.ts < new Date().getTime()))) {
             break;
         }
-        //this.log('exec: removing queue entry ' + akt.cmd.hex());
         if (this.queue.length <= 1 && !akt.cmd.eq (this.cmds.statusRequest)) {
             this.directRefresh(akt.channel);
         }
@@ -628,9 +605,7 @@ WifiLight.prototype.exec = function () {
         this.unlock();
         if (!akt.cmd) return;
     }
-    //this.log('exec: write: ' + akt.cmd.hex());
     this.write (akt.channel, akt.cmd, function() {
-        //this.log('exec: setTimeout: ' + akt.delay);
         this.writeTimeout = setTimeout(this.exec.bind(this), akt.delay);
     }.bind(this));
     akt.inProcess = 1;
@@ -639,7 +614,6 @@ WifiLight.prototype.exec = function () {
 
 WifiLight.prototype.on_off = function (channel, state) {
     this.addToQueue(channel, state ? this.cmds.on : this.cmds.off);
-    //if (!state && this.cmds.udp) this.addToQueue(channel, [0x4E,0x19,0x55]);
 };
 
 WifiLight.prototype.fade = function (channel, rgbw, transitionTime) {
@@ -651,9 +625,9 @@ WifiLight.prototype.fade = function (channel, rgbw, transitionTime) {
     var dif= { r: rgbw.r - co.r, g: rgbw.g - co.g, b: rgbw.b - co.b};
     dif.w = (rgbw.w != undefined && co.w != undefined) ? rgbw.w - co.w : 0;
     var maxSteps = Math.max(Math.abs(dif.r), Math.abs(dif.g), Math.abs(dif.b), Math.abs(dif.w), 1);
-    
+
     maxSteps = Math.min ((transitionTime*100) / this.cmds.delay, maxSteps);
-    
+
     dif.r /= maxSteps;
     dif.g /= maxSteps;
     dif.b /= maxSteps;
@@ -704,7 +678,6 @@ WifiLight.prototype.bri = function (channel, bri, transitionTime) {
     co = hsv2rgb(hsv);
     this.fade(channel, co, transitionTime);
 };
-//WifiLight.prototype.brightness = WifiLight.prototype.bri;
 
 WifiLight.prototype.onTime = function (channel, val) {
     if (this.onTimerObject) {
@@ -724,7 +697,7 @@ WifiLight.prototype.onTime = function (channel, val) {
 };
 
 WifiLight.prototype.onData = function (data) {
-    
+
     if (adapter.common.loglevel == 'debug') {
         adapter.log.debug('raw data length: ' + data.length);
         adapter.log.debug('raw data: ' + hex(data));
@@ -736,7 +709,6 @@ WifiLight.prototype.onData = function (data) {
         for (var i=0; i<this.dataBuffer.pos; i++) {
             b [i] = this.dataBuffer[i];
         }
-        //this.dataBuffer.copy(b, 0, 0, this.dataBuffer.pos);
         b.pos = this.dataBuffer.pos;
         this.dataBuffer = b;
     }
@@ -776,15 +748,9 @@ WifiLight.prototype.onData = function (data) {
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 var MiLight = function MiLight (config, zone, cb) {
-    // MiLight.prototype._zone = function() {
-    //     return zone;
-    // };
     WifiLight.call(this, config);
     if (!this.cmds) return;
-    //extend(this, WifiLight.call(this, config));
     this.zone = zone;
-    //this.cmds = Object.assign({}, tmp, {v:1});
-    //this.cmds = fullExtend({}, this.cmds);
     this.cmds = clone(this.cmds);
     this.cmds.setZone(this.zone);
     this.states = { on: 0, red: 0, green: 0, blue: 0, white: 0 };
@@ -796,13 +762,11 @@ MiLight.prototype = new WifiLight;
 MiLight.prototype.construcor = WifiLight;
 
 MiLight.prototype._write = function writeUdp (data, cb) {
-    
+
     var self = this;
-    //??this.writeTimer.clear();
     if (!this.client) {
         var dgram = require('dgram');
         self.client = dgram.createSocket('udp4');
-        //self.client = dgram.createSocket({ type: 'udp4', reuseAddr: true });
         self.client.on("listening", function (error) {
             if (error) return cb && cb(error);
             if (self.config.ip === '255.255.255.255') {
@@ -818,7 +782,7 @@ MiLight.prototype._write = function writeUdp (data, cb) {
             adapter.log.debug('udp socked closed');
         });
     }
-    
+
     self.client.send(data, 0, data.length, self.config.port, self.config.ip, function(error, bytes) {
         self.writeTimer.set(function() {
             if (self && self.client) self.client.close();
@@ -896,7 +860,7 @@ function checkDeletedDevices(cb) {
         });
         toDelete.forEachCallback(function(next, id) {
             dcs.del(id, next);
-        }, 
+        },
 		cb);
     });
 }
@@ -904,24 +868,29 @@ function checkDeletedDevices(cb) {
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 function normalizeConfig (config) {
-    
+
     var changed = false;
+    var types = [];
     config.devices.forEach(function (d, i) {
-        var dev, old = Object.assign({}, d);
-        if (!(dev = cmds.knownDeviceNames[d.name])) {
-            var err = "config.device " + d.name + ' is not a known device. Skipping this device!';
-            err += '\nKnown names are: ' + Object.keys(cmds.knownDeviceNames).join(', ');
+        var c, old = Object.assign({}, d);
+        var dev = fromDeviceName(d.name);
+
+        if (d.type === undefined) d.type = dev ? dev.type : '';
+        if (!(c = cmds[d.type])) {
+            var err = "config.device.type " + d.type + ' (' + d.name + ') is not a known device type. Skipping this device!';
+            if (!types.length) Object.keys(cmds).forEach(function(n) {
+                if (typeof cmds[n] === 'object' && cmds[n].on) types.push(n);
+            });
+            err += '\nKnown types are: ' + types.join(', ');
             adapter.log.error(err);
             return;
         }
-        
+
+        if (d.pollIntervall === undefined) d.pollIntervall = 30;
         d.pollIntervall = parseInt(d.pollIntervall) | 0;
         if (d.pollIntervall && d.pollIntervall < 5) d.pollIntervall = 5;
-        d.port = parseInt(d.port) || 5577;
-        
-        if (d.type === undefined) d.type = dev ? dev.type : '';
-        if (d.port === undefined) d.port = dev && dev.port ? dev.port : 5577;
-        if (d.pollIntervall === undefined) d.pollIntervall = 30;
+
+        d.port = parseInt(d.port) || (c && c.port ? c.port : dev && dev.port ? dev.port : 5577);
         Object.keys(d).forEach(function(key) {
             changed = changed || d[key] !== old[key];
         });
@@ -934,11 +903,8 @@ function normalizeConfig (config) {
 }
 
 function main() {
-    //onMessage({command: 'discovery'});
-    //return;
     if (!adapter.config.devices) return;
     checkDeletedDevices(function(err) {
-        // \/
     });
     normalizeConfig(adapter.config);
     for (var i=0; i<adapter.config.devices.length; i++) {

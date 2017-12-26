@@ -1,8 +1,13 @@
 {
     "common": {
         "name": "wifilight",
-        "version": "0.1.10",
+        "version": "0.2.0",
         "news": {
+
+            "0.2.0": {
+                "en": "device config handling changed",
+                "de": "Handhabung der Gerätekonfiguration geändert"
+            },
             "0.1.10": {
                 "en": "AK001-ZJ200 added (matze1708)",
                 "de": "AK001-ZJ200 hinzugefügt (matze1708)"
