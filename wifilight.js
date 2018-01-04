@@ -877,7 +877,7 @@ function normalizeConfig (config) {
 
         if (d.type === undefined) d.type = dev ? dev.type : '';
         if (!(c = cmds[d.type])) {
-            var err = "config.device.type " + d.type + ' (' + d.name + ') is not a known device type. Skipping this device!';
+            var err = 'config.device.type "' + d.type + '" (' + d.name + ') is not a known device type. Skipping this device!';
             if (!types.length) Object.keys(cmds).forEach(function(n) {
                 if (typeof cmds[n] === 'object' && cmds[n].on) types.push(n);
             });
