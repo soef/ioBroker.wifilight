@@ -61,6 +61,7 @@
             "lw12",
             "ld382"
         ],
+        "license": "MIT",
         "platform": "Javascript/Node.js",
         "mode": "daemon",
         "icon": "wifilight.png",
